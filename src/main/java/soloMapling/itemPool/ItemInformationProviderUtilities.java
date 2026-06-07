@@ -1,0 +1,481 @@
+package soloMapling.itemPool;
+
+import client.Character;
+import client.Client;
+import client.Job;
+import constants.inventory.EquipType;
+import server.ItemInformationProvider;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+
+import static java.lang.Math.max;
+import static soloMapling.DebugUtilities.debugprint;
+import static soloMapling.server.SoloMaplingUtilities.random;
+
+public class ItemInformationProviderUtilities {
+
+    // Define the ranges for equip types
+    private static final Map<EquipType, int[]> equipTypeRanges = Map.of(
+            EquipType.CAP, new int[]{1000000, 1003073},
+            EquipType.COAT, new int[]{1040000, 1049000},
+            EquipType.LONGCOAT, new int[]{1050000, 1052234},
+            EquipType.PANTS, new int[]{1060000, 1062119},
+            EquipType.SHOES, new int[]{1070000, 1072437},
+            EquipType.GLOVES, new int[]{1080000, 1082262},
+            EquipType.SHIELD, new int[]{1092000, 1092062},
+
+            EquipType.CAPE, new int[]{1102000, 1102236},
+            EquipType.EARRING, new int[]{1032000, 1032075},
+            EquipType.ACCESSORY, new int[]{1022000, 1022104} // eye
+    );
+
+
+    private static final Map<EquipType, int[]> weaponTypeRanges = new HashMap<>();
+
+    static {
+        weaponTypeRanges.put(EquipType.SWORD, new int[]{1302000, 1302133});
+        weaponTypeRanges.put(EquipType.AXE, new int[]{1312000, 1312046});
+        weaponTypeRanges.put(EquipType.MACE, new int[]{1322000, 1322074});
+        weaponTypeRanges.put(EquipType.DAGGER, new int[]{1332000, 1332088});
+        weaponTypeRanges.put(EquipType.WAND, new int[]{1372000, 1372046});
+        weaponTypeRanges.put(EquipType.STAFF, new int[]{1382000, 1382062});
+        weaponTypeRanges.put(EquipType.SWORD_2H, new int[]{1402000, 1402072});
+        weaponTypeRanges.put(EquipType.AXE_2H, new int[]{1412000, 1412046});
+        weaponTypeRanges.put(EquipType.MACE_2H, new int[]{1422000, 1422047});
+        weaponTypeRanges.put(EquipType.SPEAR, new int[]{1432000, 1432061});
+        weaponTypeRanges.put(EquipType.POLEARM, new int[]{1442000, 1442103});
+        weaponTypeRanges.put(EquipType.BOW, new int[]{1452000, 1452085});
+        weaponTypeRanges.put(EquipType.CROSSBOW, new int[]{1462000, 1462075});
+        weaponTypeRanges.put(EquipType.CLAW, new int[]{1472000, 1472100});
+        weaponTypeRanges.put(EquipType.KNUCKLER, new int[]{1482000, 1482046});
+        weaponTypeRanges.put(EquipType.PISTOL, new int[]{1492000, 1492048});
+    }
+
+    public static EquipType getRandomEquipType(Job jobStyle) {
+        Random random = new Random();
+        // Combine keys from both maps
+//        List<EquipType> allKeys = new ArrayList<>();
+//        allKeys.addAll(equipTypeRanges.keySet());
+
+        List<EquipType> equipTypes = new ArrayList<>();
+
+        // Shared equip types for all jobs
+        equipTypes.addAll(List.of(
+                EquipType.CAP,
+                EquipType.COAT,
+                EquipType.LONGCOAT,
+                EquipType.PANTS,
+                EquipType.GLOVES,
+                EquipType.SHOES
+        ));
+
+        // Job-specific equip types
+        switch (jobStyle) {
+            case BEGINNER:
+                equipTypes.addAll(List.of(
+                        EquipType.SHIELD,
+                        EquipType.CAPE,
+                        EquipType.EARRING,
+                        EquipType.ACCESSORY
+                ));
+                break;
+            case WARRIOR:
+                equipTypes.addAll(List.of(
+                        EquipType.SHIELD,
+                        EquipType.SWORD,
+                        EquipType.SWORD_2H,
+                        EquipType.AXE,
+                        EquipType.AXE_2H,
+                        EquipType.SPEAR,
+                        EquipType.POLEARM
+                ));
+                break;
+            case MAGICIAN:
+                equipTypes.addAll(List.of(
+                        EquipType.SHIELD,
+                        EquipType.WAND,
+                        EquipType.STAFF
+                ));
+                break;
+            case BOWMAN:
+                equipTypes.addAll(List.of(
+                        EquipType.BOW,
+                        EquipType.CROSSBOW
+                ));
+                break;
+            case THIEF:
+                equipTypes.addAll(List.of(
+                        EquipType.SHIELD,
+                        EquipType.CLAW,
+                        EquipType.DAGGER
+                ));
+                break;
+            default:
+                break;
+        }
+
+        return equipTypes.get(random.nextInt(equipTypes.size()));
+    }
+
+    public static EquipType getRandomWeaponType() {
+        Random random = new Random();
+        // Combine keys from both maps
+        List<EquipType> allKeys = new ArrayList<>();
+        allKeys.addAll(weaponTypeRanges.keySet());
+
+        // todo need to do job specific if statements
+
+        // Pick a random key
+        return allKeys.get(random.nextInt(allKeys.size()));
+    }
+
+    // Method to get the min and max range for an equip type
+    public static int[] getIdRangeForEquipType(EquipType equipType) {
+        if (equipTypeRanges.containsKey(equipType)) {
+            return equipTypeRanges.getOrDefault(equipType, new int[]{0, 0}); // Default to 0-0 if not found
+        }
+        if (weaponTypeRanges.containsKey(equipType)) {
+            return weaponTypeRanges.getOrDefault(equipType, new int[]{0, 0});
+        }
+        return new int[]{0, 0};
+    }
+
+//    public static int getRandomEquip(int jobType) {
+//        // gets a random equip based on jobType (warr,bow,mage,thief,pirate,common)
+//        return 0;
+//    }
+
+
+    private static final Map<Job, Integer> JOB_TO_REQ_MAP = Map.of(
+            Job.WARRIOR, 1,
+            Job.MAGICIAN, 2,
+            Job.BOWMAN, 4,
+            Job.THIEF, 8,
+            Job.PIRATE, 16
+    );
+
+    public static int getReqJobViaJobStyle(Job jobStyle) {
+        return JOB_TO_REQ_MAP.getOrDefault(jobStyle, 0);
+    }
+
+    public static Job getJobStyleViaReqJob(int reqJob) {
+        for (Map.Entry<Job, Integer> entry : JOB_TO_REQ_MAP.entrySet()) {
+            if (entry.getValue() == reqJob) {
+                return entry.getKey();
+            }
+        }
+        return Job.BEGINNER; // Return null if not found
+    }
+
+    /**
+     * Full valid equips list, then prioritizes lower id equips for more classic oriented equips.
+     * Takes considerably longer, but prioritizes old school equips
+     */
+    public static Integer getRandomEquip(EquipType eqType, int maxLevel, Job jobStyle, int gender) {
+//        debugprint("Checking for: " + eqType + ", " + jobStyle);
+        List<Integer> itemList = getAllItemIdsByEquipType(eqType);
+        List<Integer> validEquips = itemList
+                .parallelStream()
+                .filter(itemId -> checkApproporiateEquip(itemId, maxLevel, jobStyle, gender))
+                .collect(Collectors.toList());
+//        debugprint("Finished Validating List for: " + eqType + ", " + jobStyle);
+        return selectWeightedRandom(validEquips);
+    }
+
+    /**
+     * Gets random equip faster by shuffling the entire list, then returns the first one.
+     * prone to getting random "newer" equips as opposed to prioritizing classic equips.
+     * Run time is significantly faster, but can result in bots having unusual styles
+     *
+     */
+    public static Integer getRandomEquipFaster(EquipType eqType, int maxLevel, Job jobStyle, int gender) {
+        System.out.println("Checking for: " + eqType + ", " + jobStyle);
+        List<Integer> itemList = getAllItemIdsByEquipType(eqType);
+        Collections.shuffle(itemList);
+        for (Integer itemId : itemList) {
+            if (checkApproporiateEquip(itemId, maxLevel, jobStyle, gender)) {
+                return itemId;
+            }
+        }
+        return null;
+    }
+
+    private static boolean checkApproporiateEquip(int itemId, int maxLevel, Job jobStyle, int gender) {
+//        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+//        Map<String, Integer> stats = ii.getEquipStats(itemId);
+//        int levelReq = stats.get("reqLevel");
+//        boolean levelMatch = checkEquipWithinLevelRange(levelReq, maxLevel);
+//        boolean jobMatch = stats.get("reqJob") == getReqJobViaJobStyle(jobStyle);
+//        boolean genderMatch = checkEquipGenderMatch(gender, itemId);
+//        boolean tradeable = checkTradeable(itemId);
+//        boolean questItem = checkQuestEquip(itemId);
+
+
+        int levelReq = ItemDataParserXML.getValue(itemId, "reqLevel");
+        boolean levelMatch = checkEquipWithinLevelRange(levelReq, maxLevel);
+
+        boolean jobMatch = ItemDataParserXML.getValue(itemId, "reqJob") == getReqJobViaJobStyle(jobStyle);
+
+        boolean genderMatch = checkEquipGenderMatch(gender, itemId);
+
+//        boolean tradeable = checkTradeable(itemId);
+
+        if (levelMatch && jobMatch && genderMatch) {
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * Selects a random integer from the list with weighted preference towards lower values.
+     * The list is divided into intervals, and earlier intervals have higher selection probability.
+     * Designed such that given a list of validEquips that you want to select at random, but prioritize "lower" numbers
+     * meaning it will weigh more towards the classic equips, instead of the bizarre equips like maple tcg, or jank equips
+     *
+     * @param validEquips        List of integers (should be sorted from lowest to highest)
+     * @param intervalPercentage The percentage size of each interval (e.g., 20 for 20% intervals)
+     * @return A randomly selected integer from the list, or null if list is empty
+     * @throws IllegalArgumentException if intervalPercentage is not between 1 and 100
+     */
+    public static Integer selectWeightedRandom(List<Integer> validEquips, int intervalPercentage) {
+        if (validEquips == null || validEquips.isEmpty()) {
+            return null;
+        }
+
+        if (intervalPercentage < 1 || intervalPercentage > 100) {
+            throw new IllegalArgumentException("Interval percentage must be between 1 and 100");
+        }
+
+        int listSize = validEquips.size();
+        int intervalSize = Math.max(1, (listSize * intervalPercentage) / 100);
+        int numIntervals = (int) Math.ceil((double) listSize / intervalSize);
+
+        // Create weights for each interval (earlier intervals get higher weights)
+        // Using a simple linear decay: first interval gets weight numIntervals,
+        // second gets numIntervals-1, etc.
+        double[] intervalWeights = new double[numIntervals];
+        double totalWeight = 0;
+
+        for (int i = 0; i < numIntervals; i++) {
+            intervalWeights[i] = numIntervals - i; // Linear decay
+            totalWeight += intervalWeights[i];
+        }
+
+        // Select an interval based on weights
+        double randomValue = random.nextDouble() * totalWeight;
+        int selectedInterval = 0;
+        double cumulativeWeight = 0;
+
+        for (int i = 0; i < numIntervals; i++) {
+            cumulativeWeight += intervalWeights[i];
+            if (randomValue <= cumulativeWeight) {
+                selectedInterval = i;
+                break;
+            }
+        }
+
+        // Calculate the bounds of the selected interval
+        int startIndex = selectedInterval * intervalSize;
+        int endIndex = Math.min(startIndex + intervalSize, listSize);
+
+        // Randomly select an element from the chosen interval
+        int randomIndex = startIndex + random.nextInt(endIndex - startIndex);
+
+        return validEquips.get(randomIndex);
+    }
+
+    /**
+     * Convenience method using 20% intervals as default
+     */
+    public static Integer selectWeightedRandom(List<Integer> validEquips) {
+        return selectWeightedRandom(validEquips, 20);
+    }
+
+
+    public static boolean checkEquipWithinLevelRangeII(int itemId, int maxLevel) {
+        int minRange = max((int) (maxLevel * 0.25), 10);
+        return checkEquipWithinLevelRangeII(itemId, maxLevel, minRange);
+    }
+
+    public static boolean checkEquipWithinLevelRangeII(int itemId, int maxLevel, int minimumRange) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        return maxLevel - minimumRange <= ii.getEquipLevelReq(itemId) && ii.getEquipLevelReq(itemId) <= maxLevel;
+    }
+
+    public static boolean checkEquipWithinLevelRange(int levelReq, int maxLevel) {
+        int minRange = max((int) (maxLevel * 0.25), 10);
+        return checkEquipWithinLevelRange(levelReq, maxLevel, minRange);
+    }
+
+    private static boolean checkEquipWithinLevelRange(int levelReq, int maxLevel, int minimumRange) {
+        return maxLevel - minimumRange <= levelReq && levelReq <= maxLevel;
+    }
+
+//    private static boolean checkTradeable(Integer statsIITradeBlock) {
+//        return statsIITradeBlock != 1;
+//    }
+//
+//    private static boolean checkQuestItem(Integer statsIIQuest) {
+//        return statsIIQuest != 1;
+//    }
+
+
+    public static boolean checkEquipMatchJobStyle(int itemId, Job jobStyle) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        return ii.getEquipStats(itemId).get("reqJob") == getReqJobViaJobStyle(jobStyle);
+    }
+
+    public static Job getJobStyleFromItemId(Integer itemId) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        return getJobStyleViaReqJob(ii.getEquipStats(itemId).get("reqJob"));
+    }
+
+    public static Integer getRandomEquip(EquipType eqType, Character fakechar) {
+        int maxLevel = fakechar.getLevel();
+        Job jobStyle = fakechar.getJobStyle();
+        int gender = fakechar.getGender();
+        return getRandomEquip(eqType, maxLevel, jobStyle, gender);
+    }
+
+    /**
+     * Tries to get random equip based on class. If null then it'll get a common one
+     */
+    public static Integer getRandomEquipForWearing(EquipType eqType, Character fakechar) {
+        Integer randEq = getRandomEquip(eqType, fakechar);
+        if (randEq != null) {
+            return randEq;
+        }
+        int maxLevel = fakechar.getLevel();
+        Job jobStyle = Job.BEGINNER;
+        int gender = fakechar.getGender();
+        return getRandomEquip(eqType, maxLevel, jobStyle, gender);
+    }
+
+    public static Integer getRandomEquip(EquipType eqType, int maxLevel, Job jobStyle) {
+        int gender = Math.random() < 0.5 ? 0 : 1;
+        return getRandomEquip(eqType, maxLevel, jobStyle, gender);
+    }
+
+    public static boolean checkEquipGenderMatch(int gender, int itemId) {
+        List<Integer> allowed_digits = new ArrayList<>();
+
+        // Specify the allowed digits
+        if (gender == 0) { // Male
+            allowed_digits.add(0); // Male
+            allowed_digits.add(2); // Unisex
+        } else if (gender == 1) { // Female
+            allowed_digits.add(1); // Female
+            allowed_digits.add(2); // Unisex
+        } else { // Default to male
+            allowed_digits.add(0); // Male
+            allowed_digits.add(2); // Unisex
+        }
+
+        // Get the 4th digit from the left of the item ID
+        int fourthDigit = getFourthDigit(itemId);
+
+        // Check if the fourth digit matches one of the allowed digits
+        return allowed_digits.contains(fourthDigit);
+    }
+
+    public static boolean checkTradeable(int itemId) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        return !ii.isUntradeableRestricted(itemId);
+    }
+
+    public static boolean checkQuestEquip(int itemId) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        return !ii.isQuestItem(itemId);
+    }
+
+    // Used to determine Gender. 0 = Male, 1 = Female, 2 = Unisex
+    public static int getFourthDigit(int itemId) {
+        String itemIdStr = Integer.toString(itemId); // Convert integer to string
+        if (itemIdStr.length() >= 4) { // Ensure it has at least 4 digits
+            return java.lang.Character.getNumericValue(itemIdStr.charAt(3)); // Get the digit at index 3
+        } else {
+            throw new IllegalArgumentException("ItemId must have at least 4 digits");
+        }
+    }
+
+    public static int getRandomCashEquip(Character fakechar, EquipType eqType) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        List<Integer> itemList = getAllItemIdsByEquipType(eqType, false);
+        Collections.shuffle(itemList);
+
+        for (Integer itemId : itemList) {
+            if (checkEquipGenderMatch(fakechar.getGender(), itemId) && // gender Match
+                    ii.isCash(itemId) // cash Item
+            ) {
+                return itemId;
+            }
+        }
+        return 0;
+    }
+
+    public static List<Integer> getAllItemIdsByEquipType(EquipType equipType, boolean ignoreCashItem) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        int range[] = getIdRangeForEquipType(equipType);
+//        debugprint("Get all items in range start");
+        List<Integer> itemIds = ii.getItemIdsInRange(range[0], range[1], ignoreCashItem);
+//        debugprint("Get all items in range end");
+        return itemIds;
+    }
+
+    public static List<Integer> getAllItemIdsByEquipType(EquipType equipType) {
+        return getAllItemIdsByEquipType(equipType, true);
+    }
+
+    public static Integer getWzPrice(int itemId) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        int price = ii.getWholePrice(itemId);
+        if (price <= 50) { // Random items have no value
+            price = 5000000; // todo procedurally calculate value based on level?
+        }
+        return price;
+    }
+
+    public static String getItemName(int itemId) {
+        return ItemInformationProvider.getInstance().getName(itemId);
+    }
+
+    public static void iitest(Client c) {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+
+//        System.out.println(getWzPrice(1472029)); // Scarab
+
+//        for(Integer itemId : getAllItemIdsByEquipType(EquipType.COAT, false)) {
+//            System.out.println(itemId + ": " + ii.getName(itemId));
+//            if(checkEquipGenderMatch(0, itemId)){
+//                System.out.println("Male");
+//            }
+//            else if(checkEquipGenderMatch(1, itemId)){
+//                System.out.println("Female");
+//            }
+//            else if(checkEquipGenderMatch(2, itemId)){
+//                System.out.println("Unisex");
+//            }
+//        }
+
+//        int citemId = getRandomCashEquip(c.getPlayer(), EquipType.COAT);
+//        System.out.println("Random cash Equip COAT - Madara: " + ii.getName(citemId));
+//
+//        int hitemId = getRandomEquip(EquipType.CAP, c.getPlayer());
+//        System.out.println("Random  Equip CAP - Madara: " + ii.getName(hitemId));
+//
+//        int litemId = getRandomEquip(EquipType.LONGCOAT, 75, Job.MAGICIAN);
+//        System.out.println("Random  Equip LONGCOAT - 75: " + ii.getName(litemId));
+//
+//        Integer ditemId = getRandomEquip(EquipType.DAGGER, 120, Job.THIEF, 0);
+//        System.out.println("Random  Equip DAGGER - 120: " + ii.getName(ditemId));
+
+    }
+
+}
