@@ -3259,17 +3259,19 @@ public class PacketCreator {
     }
 
     /**
-     * @param c
+     * Fix by Noob + Madara - change param Character to player, checks if player is owner
+     * Writes the the index of the player's slot. Before was hard coded to either 0 (owner) or 1 (slot 1).
      * @param shop
-     * @param owner
+     * @param player
      * @return
      */
-    public static Packet getPlayerShop(PlayerShop shop, boolean owner) {
+    public static Packet getPlayerShop(PlayerShop shop, Character player) {
         final OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
+        boolean owner = shop.isOwner(player);
         p.writeByte(PlayerInteractionHandler.Action.ROOM.getCode());
         p.writeByte(4);
         p.writeByte(4);
-        p.writeByte(owner ? 0 : 1);
+        p.writeByte(owner ? 0 : player.getSlot()); // Slot of player
 
         if (owner) {
             List<PlayerShop.SoldItem> sold = shop.getSold();
@@ -4328,24 +4330,24 @@ public class PacketCreator {
      * Sends a player hint.
      *
      * @param hint   The hint it's going to send.
-     * @param width  How tall the box is going to be.
-     * @param height How long the box is going to be.
+     * @param width  How long the box is going to be.
+     * @param duration How long the box is going last.
      * @return The player hint packet.
      */
-    public static Packet sendHint(String hint, int width, int height) {
+    public static Packet sendHint(String hint, int width, int duration) {
         if (width < 1) {
             width = hint.length() * 10;
             if (width < 40) {
                 width = 40;
             }
         }
-        if (height < 5) {
-            height = 5;
+        if (duration > 1 && duration < 5) {
+            duration = 5;
         }
         final OutPacket p = OutPacket.create(SendOpcode.PLAYER_HINT);
         p.writeString(hint);
         p.writeShort(width);
-        p.writeShort(height);
+        p.writeShort(duration);
         p.writeByte(1);
         return p;
     }
@@ -6135,7 +6137,8 @@ public class PacketCreator {
         if (item == null) {
             p.writeByte(0);
         } else {
-            p.writeByte(item.getPosition());
+//            p.writeByte(item.getPosition()); // changed to 1 for bots to show item
+            p.writeByte((short) 1);
             addItemInfo(p, item, true);
         }
         return p;

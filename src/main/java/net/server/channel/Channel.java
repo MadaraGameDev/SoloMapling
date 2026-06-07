@@ -230,7 +230,7 @@ public final class Channel {
         closeChannelServices();
     }
 
-    private void closeAllMerchants() {
+    public void closeAllMerchants() {
         try {
             List<HiredMerchant> merchs;
 

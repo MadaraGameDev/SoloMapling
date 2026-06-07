@@ -61,8 +61,8 @@ public class DatabaseConnection {
 
         final int initFailTimeoutSeconds = YamlConfig.config.server.INIT_CONNECTION_POOL_TIMEOUT;
         config.setInitializationFailTimeout(SECONDS.toMillis(initFailTimeoutSeconds));
-        config.setConnectionTimeout(SECONDS.toMillis(30)); // Hikari default
-        config.setMaximumPoolSize(10); // Hikari default
+        config.setConnectionTimeout(SECONDS.toMillis(60)); // Hikari default
+        config.setMaximumPoolSize(100); // Hikari default
 
         config.addDataSourceProperty("cachePrepStmts", true);
         config.addDataSourceProperty("prepStmtCacheSize", 25);

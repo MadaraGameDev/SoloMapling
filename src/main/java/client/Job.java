@@ -132,4 +132,34 @@ public enum Job {
         case 5: PIRATE;
         */
     }
+
+    /**
+     * Determines the job tier (1st, 2nd, 3rd, or 4th) based on the job ID.
+     *
+     * For Adventurer Classes - Warrior, Mage, Bowman, Thief
+     * @return An integer from 1-4 representing the job tier, or 0 if the job ID doesn't match any pattern
+     */
+    public int getJobTier() {
+        // Special case for beginner
+        if (jobid == 0) {
+            return 0; // Beginner is a special case (job tier 0)
+        }
+
+        // Get the last two digits of the job ID
+        int lastTwoDigits = jobid % 100;
+
+        // Check patterns for different job tiers
+        if (lastTwoDigits == 0) {
+            return 1; // 1st job (ends with 00)
+        } else if (lastTwoDigits == 10 || lastTwoDigits == 20 || lastTwoDigits == 30) {
+            return 2; // 2nd job (ends with 10, 20, or 30)
+        } else if (lastTwoDigits == 11 || lastTwoDigits == 21 || lastTwoDigits == 31) {
+            return 3; // 3rd job (ends with 11, 21, or 31)
+        } else if (lastTwoDigits == 12 || lastTwoDigits == 22 || lastTwoDigits == 32) {
+            return 4; // 4th job (ends with 12, 22, or 32)
+        } else {
+            return 0; // Unknown job pattern
+        }
+    }
+
 }

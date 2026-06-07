@@ -35,7 +35,7 @@ public final class RPSActionHandler extends AbstractPacketHandler {
                         if (rps != null) {
                             rps.reward(c);
                         }
-                        if (chr.getMeso() >= 1000) {
+                        if (chr.getMeso() >= RockPaperScissor.ENTRY_COST) {
                             chr.setRPS(new RockPaperScissor(c, mode));
                         } else {
                             c.sendPacket(PacketCreator.rpsMesoError(-1));

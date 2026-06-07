@@ -34,6 +34,8 @@ import net.server.world.MessengerCharacter;
 import net.server.world.World;
 import tools.PacketCreator;
 
+import static soloMapling.server.MapleMessengerConsole.executeCommand;
+
 public final class MessengerHandler extends AbstractPacketHandler {
     @Override
     public final void handlePacket(InPacket p, Client c) {
@@ -117,6 +119,9 @@ public final class MessengerHandler extends AbstractPacketHandler {
                             MessengerCharacter messengerplayer = new MessengerCharacter(player, player.getMessengerPosition());
                             input = p.readString();
                             world.messengerChat(messenger, input, messengerplayer.getName());
+                            if(player.isGM()) {
+                                executeCommand(player, input);
+                            }
                         }
                         break;
                 }

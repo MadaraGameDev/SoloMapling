@@ -35,6 +35,7 @@ import net.server.coordinator.world.InviteCoordinator.InviteResultType;
 import net.server.coordinator.world.InviteCoordinator.InviteType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import soloMapling.ArtificialPlayer.BotTradeSystem.BotTradeQueue;
 import tools.PacketCreator;
 import tools.Pair;
 
@@ -43,6 +44,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static soloMapling.ArtificialPlayer.BotHelpers.isBot;
+import static soloMapling.DebugUtilities.debugprint;
 
 /**
  * @author Matze
@@ -152,7 +156,9 @@ public class Trade {
         boolean show = YamlConfig.config.server.USE_DEBUG;
 
         for (Item item : items) {
-            InventoryManipulator.addFromDrop(chr.getClient(), item, show);
+            if (!isBot(chr)) {
+                InventoryManipulator.addFromDrop(chr.getClient(), item, show);
+            }
         }
         if (meso > 0) {
             chr.gainMeso(meso, show, true, show);
@@ -169,11 +175,11 @@ public class Trade {
         chr.sendPacket(PacketCreator.getTradeResult(number, result));
     }
 
-    private boolean isLocked() {
+    public boolean isLocked() {
         return locked.get();
     }
 
-    private int getMeso() {
+    public int getMeso() {
         return meso;
     }
 
@@ -196,6 +202,14 @@ public class Trade {
         }
     }
 
+    public void setMesoBot(int meso) {
+        this.meso = meso;
+        chr.sendPacket(PacketCreator.getTradeMesoSet((byte) 0, this.meso));
+        if (partner != null) {
+            partner.getChr().sendPacket(PacketCreator.getTradeMesoSet((byte) 1, this.meso));
+        }
+    }
+
     public boolean addItem(Item item) {
         synchronized (items) {
             if (items.size() > 9) {
@@ -207,6 +221,18 @@ public class Trade {
                 }
             }
 
+            items.add(item);
+        }
+
+        return true;
+    }
+
+    public boolean swapItem(Item item) {
+        synchronized (items) {
+            if (items.size() > 9) {
+                return false;
+            }
+            items.removeIf(it -> it.getPosition() == item.getPosition());
             items.add(item);
         }
 
@@ -252,7 +278,9 @@ public class Trade {
         for (Item item : exchangeItems) {
             tradeItems.add(new Pair<>(item, item.getInventoryType()));
         }
-
+        if (isBot(chr)) {
+            return true;
+        }
         return Inventory.checkSpotsAndOwnership(chr, tradeItems);
     }
 
@@ -352,8 +380,24 @@ public class Trade {
             }
 
             logTrade(local, partner);
-            local.completeTrade();
-            partner.completeTrade();
+            if (!isBot(local.getChr())) {
+                local.completeTrade();
+            }
+            if (!isBot(partner.getChr())) {
+                partner.completeTrade();
+            }
+
+            /*
+            Sets successfull Trade Callback depending on if Bot or Player is the final confirmation
+             */
+            if (isBot(local.getChr())) {
+                debugprint("is bot pass LOCAL: " + local.getChr());
+                local.setCallbackSuccessfulTrade();
+            }
+            if (isBot(partner.getChr())) {
+                debugprint("is bot pass PARTNER: " + partner.getChr());
+                partner.setCallbackSuccessfulTrade();
+            }
 
             partner.getChr().setTrade(null);
             chr.setTrade(null);
@@ -368,6 +412,7 @@ public class Trade {
 
         trade.cancel(selfResult);
         if (trade.getPartner() != null) {
+            debugprint("canceling", trade.getPartner().getChr().getName());
             trade.getPartner().cancel(partnerResult);
             trade.getPartner().getChr().setTrade(null);
 
@@ -483,6 +528,9 @@ public class Trade {
 
                 c1.sendPacket(PacketCreator.getTradeStart(c1.getClient(), c1.getTrade(), (byte) 0));
                 c2.sendPacket(PacketCreator.tradeInvite(c1));
+                if (isBot(c2)) {
+                    BotTradeQueue.getInstance().addTradeRequest(c2, c1);
+                }
             } else {
                 c1.message("The other player is already trading with someone else.");
                 cancelTrade(c1, TradeResult.NO_RESPONSE);
@@ -498,10 +546,12 @@ public class Trade {
         InviteResult inviteRes = InviteCoordinator.answerInvite(InviteType.TRADE, c1.getId(), c2.getId(), true);
 
         InviteResultType res = inviteRes.result;
-        if (res == InviteResultType.ACCEPTED) {
+        if (res == InviteResultType.ACCEPTED || isBot(c2)) {
             if (c1.getTrade() != null && c1.getTrade().getPartner() == c2.getTrade() && c2.getTrade() != null && c2.getTrade().getPartner() == c1.getTrade()) {
                 c2.sendPacket(PacketCreator.getTradePartnerAdd(c1));
-                c1.sendPacket(PacketCreator.getTradeStart(c1.getClient(), c1.getTrade(), (byte) 1));
+                if (!isBot(c1)) {
+                    c1.sendPacket(PacketCreator.getTradeStart(c1.getClient(), c1.getTrade(), (byte) 1));
+                }
                 c1.getTrade().setFullTrade(true);
                 c2.getTrade().setFullTrade(true);
             } else {
@@ -564,4 +614,24 @@ public class Trade {
         }
         return sj.toString();
     }
+
+    /*
+    Callback variable to allow Bot to know if it's trade was successful
+     */
+    public interface TradeResultCallback {
+        void onTradeResult(TradeResult result);
+    }
+
+    private TradeResultCallback callback;
+
+    public void setTradeResultCallback(TradeResultCallback callback) {
+        this.callback = callback;
+    }
+
+    private void setCallbackSuccessfulTrade() {
+        if (callback != null) {
+            callback.onTradeResult(TradeResult.SUCCESSFUL);
+        }
+    }
+
 }

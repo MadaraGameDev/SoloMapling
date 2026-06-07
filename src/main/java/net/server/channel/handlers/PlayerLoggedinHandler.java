@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 import scripting.event.EventInstanceManager;
 import server.life.MobSkill;
 import service.NoteService;
+import soloMapling.ArtificialPlayer.BotHelpers;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
@@ -76,6 +77,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static soloMapling.ArtificialPlayer.BotClientHandler.createBotClient;
 
 public final class PlayerLoggedinHandler extends AbstractPacketHandler {
     private static final Logger log = LoggerFactory.getLogger(PlayerLoggedinHandler.class);
@@ -228,6 +231,7 @@ public final class PlayerLoggedinHandler extends AbstractPacketHandler {
             cserv.addPlayer(player);
             wserv.addPlayer(player);
             player.setEnteredChannelWorld();
+            createBotClient(c);
 
             List<PlayerBuffValueHolder> buffs = server.getPlayerBuffStorage().getBuffsFromStorage(cid);
             if (buffs != null) {

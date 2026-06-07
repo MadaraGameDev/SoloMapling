@@ -55,6 +55,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static soloMapling.ArtificialPlayer.BotHelpers.isBot;
+
 /**
  * @author XoticStory
  * @author Ronan - concurrency protection
@@ -63,13 +65,13 @@ public class HiredMerchant extends AbstractMapObject {
     private static final int VISITOR_HISTORY_LIMIT = 10;
     private static final int BLACKLIST_LIMIT = 20;
 
-    private final int ownerId;
+    protected int ownerId;
     private final int itemId;
     private final int mesos = 0;
     private final int channel;
     private final int world;
     private final long start;
-    private String ownerName = "";
+    protected String ownerName = "";
     private String description = "";
     private final List<PlayerShopItem> items = new LinkedList<>();
     private final List<Pair<String, Byte>> messages = new LinkedList<>();
@@ -82,9 +84,11 @@ public class HiredMerchant extends AbstractMapObject {
     private final LinkedHashSet<String> blacklist = new LinkedHashSet<>(); // case-sensitive character names
     private final Lock visitorLock = new ReentrantLock(true);
 
-    private record Visitor(Character chr, Instant enteredAt) {}
+    private record Visitor(Character chr, Instant enteredAt) {
+    }
 
-    public record PastVisitor(String chrName, Duration visitDuration) {}
+    public record PastVisitor(String chrName, Duration visitDuration) {
+    }
 
     public HiredMerchant(final Character owner, String desc, int itemId) {
         this.setPosition(owner.getPosition());
@@ -785,7 +789,8 @@ public class HiredMerchant extends AbstractMapObject {
     }
 
     @Override
-    public void sendDestroyData(Client client) {}
+    public void sendDestroyData(Client client) {
+    }
 
     @Override
     public void sendSpawnData(Client client) {
@@ -821,4 +826,60 @@ public class HiredMerchant extends AbstractMapObject {
             return mesos;
         }
     }
+
+    /*
+    SoloMapling allows bots to buy
+     */
+    public void botBuy(Character fakechar, PlayerShopItem pItem, short quantity) {
+        synchronized (items) {
+            Item newItem = pItem.getItem().copy();
+            int price = (int) Math.min((float) pItem.getPrice() * quantity, Integer.MAX_VALUE);
+            price -= Trade.getFee(price);  // thanks BHB for pointing out trade fees not applying here
+
+            synchronized (sold) {
+                sold.add(new SoldItem(fakechar.getName(), pItem.getItem().getItemId(), quantity, price));
+            }
+
+            pItem.setBundles((short) (pItem.getBundles() - quantity));
+            if (pItem.getBundles() < 1) {
+                pItem.setDoesExist(false);
+            }
+
+            if (YamlConfig.config.server.USE_ANNOUNCE_SHOPITEMSOLD) {   // idea thanks to Vcoc
+                announceItemSold(newItem, price, getQuantityLeft(pItem.getItem().getItemId()));
+            }
+
+            Character owner = Server.getInstance().getWorld(world).getPlayerStorage().getCharacterByName(ownerName);
+            if (owner != null && !isBot(owner)) {
+                owner.addMerchantMesos(price);
+            } else {
+                try (Connection con = DatabaseConnection.getConnection()) {
+                    long merchantMesos = 0;
+                    try (PreparedStatement ps = con.prepareStatement("SELECT MerchantMesos FROM characters WHERE id = ?")) {
+                        ps.setInt(1, ownerId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) {
+                                merchantMesos = rs.getInt(1);
+                            }
+                        }
+                    }
+                    merchantMesos += price;
+
+                    try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET MerchantMesos = ? WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS)) {
+                        ps.setInt(1, (int) Math.min(merchantMesos, Integer.MAX_VALUE));
+                        ps.setInt(2, ownerId);
+                        ps.executeUpdate();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            try {
+                this.saveItems(false);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 }

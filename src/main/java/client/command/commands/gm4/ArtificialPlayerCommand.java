@@ -1,0 +1,587 @@
+package client.command.commands.gm4;
+
+import client.Character;
+import client.Client;
+import client.command.Command;
+import client.inventory.BodyPart;
+import server.maps.MapleMap;
+import server.maps.Portal;
+import soloMapling.ArtificialPlayer.BotCommandsPack.MegaphoneCommands;
+import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorateBody;
+import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorateEquips;
+import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorateNX;
+import soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands;
+import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.MovementRecording;
+import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
+import soloMapling.ArtificialPlayer.BotTypes.Blackjack.BlackjackDealerBot;
+import soloMapling.ArtificialPlayer.BotPartySystem.BotPartyCommands;
+import soloMapling.ArtificialPlayer.BotPartySystem.BotPartyQueue;
+import soloMapling.ArtificialPlayer.BotMessagingSystem.QueueMonitor;
+import soloMapling.ArtificialPlayer.BotHelpers;
+import soloMapling.ArtificialPlayer.BotSM;
+import soloMapling.ArtificialPlayer.BotTypeManager;
+import soloMapling.ArtificialPlayer.SocialHotPotatoManager;
+import soloMapling.server.ExecutorServiceManager;
+
+import java.awt.*;
+import java.util.List;
+
+import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botLoot;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botLootLocation;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botLootOwnerItems;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botLootTargetCharactersItems;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.WarpCommands.botEnterPortalDropDown;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.BotChatbubbleTyping;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.displayPlayerChatCommands;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.expirePlayerChatCommands;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.BotSpeak;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.displayPlayerChatCommands;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botThrowToOwnerMeso;
+import static soloMapling.ArtificialPlayer.BotCommandsPack.WarpCommands.botWarpMapOnPortal;
+import static soloMapling.ArtificialPlayer.BotCustomization.EquipBot;
+import static soloMapling.ArtificialPlayer.BotMovementSystem.InPacketReader.getMovementRecording;
+import static soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands.BotMoveStream;
+import static soloMapling.ArtificialPlayer.BotGeneration.removeBotFromServer;
+import static soloMapling.ArtificialPlayer.BotGeneration.warpBotToLocation;
+import static soloMapling.ArtificialPlayer.BotHelpers.convertItemIdToName;
+import static soloMapling.ArtificialPlayer.BotLogic.readPlayerCashEquipBySlotName;
+import static soloMapling.ArtificialPlayer.BotLogic.readPlayerEquipBySlotName;
+//import static soloMapling.ArtificialPlayer.BotLogic.readPlayersEquip;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.BLACKJACK_DEALER;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.DICE_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.FM_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.GACHA_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.HENESYS_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.OPQ_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.SELLING_MERCHANT_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.BUYING_MERCHANT_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.NX_MERCHANT_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.SCROLL_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.GAME_ZONE_HOST_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.DROP_GAME_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.HENESYS_JQ_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.TUTORIAL_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.convertBotType;
+import static soloMapling.ArtificialPlayer.BotTypeManager.manuallyStartBot;
+import static soloMapling.ArtificialPlayer.BotTypeManager.manuallyStopBot;
+import static soloMapling.DebugUtilities.debugprint;
+import static soloMapling.server.NXCodeManager.createCompleteNXCode;
+import static soloMapling.server.SoloMaplingUtilities.isInteger;
+
+public class ArtificialPlayerCommand extends Command {
+    {
+        setDescription("Artificial Player Commands Test.");
+    }
+
+    private static Character player;
+
+    @Override
+    public void execute(Client c, String[] params) {
+        player = c.getPlayer();
+        if (params.length == 0) {
+            ExecutorServiceManager.getExecutorService().execute(() -> {
+                player.yellowMessage("Please input an integer for cid. Try !bot help");
+            });
+            return;
+        }
+        if (params.length == 1) {
+            ExecutorServiceManager.getExecutorService().execute(() ->
+            {
+                handleDirectCommand(params[0], c);
+            });
+            return;
+        }
+        if (params.length == 2) {
+            ExecutorServiceManager.getExecutorService().execute(() ->
+            {
+                if (isInteger(params[1])) {
+                    int commandNum = Integer.parseInt(params[1]);
+                    handleNumberedCommand(params[0], commandNum, c);
+                } else {
+                    player.yellowMessage("Second input not an integer");
+                }
+            });
+            return;
+        }
+        if (params.length == 3) {
+            ExecutorServiceManager.getExecutorService().execute(() ->
+            {
+                boolean massCommand = params[0].toLowerCase().contains("mass");
+                if (massCommand) {
+                    int commandNum = Integer.parseInt(params[1]);
+                    int commandNum2 = Integer.parseInt(params[2]);
+                    handleMassCommand(params[0], commandNum, commandNum2, c);
+                } else if (isInteger(params[1]) && isInteger(params[2])) {
+                    int commandNum = Integer.parseInt(params[1]);
+                    int commandNum2 = Integer.parseInt(params[2]);
+                    handleTwoNumberedCommand(params[0], commandNum, commandNum2, c);
+                } else if (isInteger(params[1])) {
+                    int commandNum = Integer.parseInt(params[1]);
+                    String commandString = params[2];
+                    handleTwoObjectCommand(params[0], commandNum, commandString, c);
+                } else {
+                    player.yellowMessage("Second input not an integer");
+                }
+            });
+            return;
+        }
+    }
+
+    public static void handleDirectCommand(String input, Client c) {
+        switch (input.toLowerCase()) {
+            case "help":
+                printHelp();
+                break;
+            case "create":
+                BotTypeManager.createBots(c);
+                break;
+            case "hint":
+                List<String> lstr = List.of("Hey", "Test", "Cho");
+                displayPlayerChatCommands(c.getPlayer(), lstr);
+//                testCygnusHint(c.getPlayer(), c);
+                break;
+            case "expirehint":
+                expirePlayerChatCommands(c.getPlayer());
+                break;
+            case "testslotinfo":
+                testEqBySlot(c.getPlayer());
+                break;
+            case "viewqueue":
+                QueueMonitor mon = new QueueMonitor();
+                mon.run();
+                break;
+            case "nxcode":
+                createCompleteNXCode("GERALTYENNEFER69");
+                break;
+            default:
+                player.yellowMessage("Invalid command - Direct Command");
+                break;
+        }
+    }
+
+    public static void handleNumberedCommand(String input, int input2, Client c) {
+        Character fakechar = BotHelpers.getCharFromChannelStorage(input2);
+        if (fakechar == null) {
+            player.yellowMessage("Bot null");
+            return;
+        }
+
+        switch (input.toLowerCase()) {
+            case "meso":
+                testDropCommands(fakechar, c);
+                break;
+            case "dicebot":
+                DICE_BOT.createAndSetBot(fakechar);
+                break;
+            case "tutorialbot":
+            case "tutbot":
+                TUTORIAL_BOT.createAndSetBot(fakechar);
+                break;
+            case "setfmbot":
+            case "fmbot":
+                FM_BOT.createAndSetBot(fakechar);
+                break;
+            case "scrollingbot":
+            case "scrollbot":
+                SCROLL_BOT.createAndSetBot(fakechar);
+                break;
+            case "merchantbot":
+            case "sellingbot":
+                SELLING_MERCHANT_BOT.createAndSetBot(fakechar);
+                break;
+            case "buyingbot":
+                BUYING_MERCHANT_BOT.createAndSetBot(fakechar);
+                break;
+            case "nxbot":
+            case "nxmerchantbot":
+                NX_MERCHANT_BOT.createAndSetBot(fakechar);
+                break;
+            case "gachabot":
+                GACHA_BOT.createAndSetBot(fakechar);
+                break;
+            case "henesysbot":
+                HENESYS_BOT.createAndSetBot(fakechar);
+                break;
+            case "gamezonehost":
+            case "gzhbot":
+                GAME_ZONE_HOST_BOT.createAndSetBot(fakechar);
+                break;
+            case "bjbot":
+            case "bjdealerbot":
+            case "blackjackbot":
+                BLACKJACK_DEALER.createAndSetBot(fakechar);
+                break;
+            case "dropgamebot":
+            case "dgbot":
+                DROP_GAME_BOT.createAndSetBot(fakechar);
+                break;
+            case "opqbot":
+                OPQ_BOT.createAndSetBot(fakechar);
+                break;
+            case "jqbot":
+            case "henesysjqbot":
+                HENESYS_JQ_BOT.createAndSetBot(fakechar);
+                break;
+            case "manualstart":
+                manuallyStartBot(fakechar);
+                break;
+            case "manualstop":
+                manuallyStopBot(fakechar);
+                break;
+            case "convertfmbot":
+                convertBotType(fakechar, FM_BOT);
+                break;
+            case "convertscrollbot":
+                convertBotType(fakechar, SCROLL_BOT);
+                break;
+
+            case "loot":
+                botLoot(fakechar, 1000); // 1000 = at feet
+                break;
+            case "lootwide":
+                botLoot(fakechar, 9000); // 3000 = 2.5 character widths
+                break;
+            case "lootlocation":
+                botLootLocation(fakechar, c.getPlayer().getPosition());
+                break;
+            case "lootownitems":
+                botLootOwnerItems(fakechar, fakechar.getPosition(), 12000);
+                break;
+            case "loottargetsitems":
+                botLootTargetCharactersItems(fakechar, c.getPlayer(), c.getPlayer().getPosition(), 9000);
+                break;
+            case "warphere":
+            case "warpbothere":
+                MapleMap map = c.getPlayer().getMap();
+                Point pos = c.getPlayer().getPosition();
+                warpBotToLocation(fakechar, pos, map);
+                break;
+            case "enterportal":
+                botWarpMapOnPortal(fakechar); // doesn't require hard coded id's
+                break;
+            case "disconnect":
+            case "dc":
+            case "remove":
+                manuallyStopBot(fakechar);
+                removeBotFromServer(fakechar);
+                break;
+            case "randombody":
+                BotDecorateBody.decorateBotBody(fakechar);
+                break;
+            case "randomequips":
+                BotDecorateEquips.decorateBotEquips(fakechar);
+                break;
+            case "decoratenx":
+            case "nxdecorate":
+                BotDecorateNX.applyForced(fakechar);
+                player.yellowMessage("NX decoration applied to bot " + fakechar.getId()
+                        + " (" + fakechar.getName() + ") tier=" + fakechar.getTier()
+                        + " gender=" + fakechar.getGender());
+                break;
+            case "faceme":
+                MovementCommands.botFaceTowardsPoint(fakechar, c.getPlayer().getPosition());
+                player.yellowMessage("Bot " + fakechar.getId() + " facing towards you");
+                break;
+            case "nudge":
+                MovementCommands.nudgeSmall(fakechar);
+                player.yellowMessage("Nudged bot " + fakechar.getName() + " by 20 units.");
+                break;
+            case "nudgeoverlap":
+                boolean nudged = MovementCommands.nudgeAwayFromOverlap(fakechar);
+                player.yellowMessage(nudged
+                        ? "Bot " + fakechar.getName() + " nudged away from nearby bot."
+                        : "No overlapping bot found near " + fakechar.getName() + ".");
+                break;
+
+            // Party commands
+            case "makeparty":
+                player.yellowMessage("makeparty result: " + BotPartyCommands.botMakeParty(fakechar));
+                break;
+            case "leaveparty":
+                BotPartyCommands.botLeaveParty(fakechar);
+                break;
+            case "acceptinv":
+            case "acceptparty":
+                player.yellowMessage("acceptPartyInvite result: " + BotPartyCommands.botAcceptPartyInvite(fakechar));
+                break;
+            case "rejectinv":
+            case "rejectparty":
+                player.yellowMessage("rejectPartyInvite result: " + BotPartyCommands.botRejectPartyInvite(fakechar));
+                break;
+            case "inviteparty":
+            case "botinviteme":
+                player.yellowMessage("botInvitePlayer result: " + BotPartyCommands.botInvitePlayer(fakechar, c.getPlayer()));
+                break;
+            case "checkpartyqueue":
+                BotPartyQueue.PartyInviteEntry entry = BotPartyQueue.getInstance().getPartyInvite(fakechar);
+                if (entry == null) {
+                    player.yellowMessage("No pending party invite for " + fakechar.getName());
+                } else {
+                    player.yellowMessage("Pending invite: from=" + entry.getInviter().getName() + " partyId=" + entry.getPartyId());
+                }
+                break;
+
+            default:
+                player.yellowMessage("Invalid command - NumberedCommand");
+                break;
+        }
+
+    }
+
+    public static void handleMassCommand(String input, int input2, int input3, Client c) {
+        player.yellowMessage("Mass Command: " + input + ", num: " + input2 + ", num2: " + input3);
+        switch (input.toLowerCase()) {
+            case "masscreate":
+                BotTypeManager.massCreateBots(input2, input3, c);
+                break;
+            case "massfmbot":
+                BotTypeManager.massFMBots(input2, input3);
+                break;
+            case "massmanualstart":
+                BotTypeManager.massManualStart(input2, input3);
+                break;
+            case "massmanualstop":
+                BotTypeManager.massManualStop(input2, input3);
+                break;
+        }
+    }
+
+    public static void handleTwoNumberedCommand(String input, int input2, int input3, Client c) {
+        Character fakechar = BotHelpers.getCharFromChannelStorage(input2);
+        if (fakechar == null) {
+            player.yellowMessage("Bot null");
+            return;
+        }
+
+        player.yellowMessage("Command: " + input2 + ", arg: " + input3);
+
+        switch (input.toLowerCase()) {
+            case "equip":
+                /*
+                1702150 - NX weapon sword mercury
+                1302063 - Flaming Katana
+                1002577 - Pickpocket Pilfer
+                1050018 - Blue Sauna Robe
+                1072344 - Facestompers
+                1082223 - Stormcaster Gloves
+                 */
+                EquipBot(fakechar, input3);
+                break;
+//            case "getslotinfo":
+//                testEquipDestinationSlot(c.getPlayer(), input3);
+//                break;
+
+            case "sethair":
+                fakechar.setHair(input3);
+                break;
+            case "bjplayer":
+            case "bjplayerbot":
+            case "bjaddplayer":
+                // input2 = dealer bot ID, input3 = player bot ID to add
+                BotSM dealerBot = CharacterStorage.getBotById(input2);
+                Character playerToAdd = BotHelpers.getCharFromChannelStorage(input3);
+                if (dealerBot instanceof BlackjackDealerBot && playerToAdd != null) {
+                    BlackjackDealerBot bjDealer = (BlackjackDealerBot) dealerBot;
+                    boolean added = bjDealer.getTable().addPlayer(playerToAdd);
+                    bjDealer.getInteractors().setRespondant(playerToAdd);
+                    player.yellowMessage(added
+                            ? playerToAdd.getName() + " added to blackjack table."
+                            : "Table is full or player already added.");
+                } else {
+                    player.yellowMessage("Dealer bot not found or not a BlackjackDealerBot, or player bot not found.");
+                }
+                break;
+            case "loot":
+                break;
+            default:
+                player.yellowMessage("Invalid command - Two Number");
+                break;
+        }
+    }
+
+    // String Int String
+    public static void handleTwoObjectCommand(String input, int input2, String str, Client c) {
+        Character fakechar = BotHelpers.getCharFromChannelStorage(input2);
+        if (fakechar == null) {
+            player.yellowMessage("Bot null");
+            return;
+        }
+
+        switch (input.toLowerCase()) {
+            case "chat":
+                BotSpeak(fakechar, str);
+                break;
+            case "bubbletype":
+                String dd = "Be very cautious when dealing with other players. You won't know their true intentions.";
+                BotChatbubbleTyping(fakechar, dd, 150); // 150ms delay between updates
+                break;
+            case "playrecording":
+            case "playrec":
+                player.yellowMessage("Playing recording '" + str + "' on bot " + fakechar.getName() + " (map " + fakechar.getMapId() + ")");
+                try {
+                    MovementRecording mvr = getMovementRecording(fakechar.getMapId(), str);
+                    BotMoveStream(mvr, fakechar);
+                    player.yellowMessage("Recording '" + str + "' finished.");
+                } catch (Exception e) {
+                    player.yellowMessage("Failed to play recording: " + e.getMessage());
+                }
+                break;
+
+            // Megaphone Commands
+            case "smega":
+                MegaphoneCommands.BotSuperMegaphone(fakechar, str);
+                break;
+            case "avatarsmega":
+                MegaphoneCommands.BotAvatarMegaphone(fakechar, str);
+                break;
+            case "tv":
+                MegaphoneCommands.BotMapleTV(fakechar, str);
+                break;
+            case "tvpartner":
+            case "tvp":
+                MegaphoneCommands.BotMapleTVPartner(fakechar, str, c.getPlayer());
+                break;
+            default:
+                player.yellowMessage("Invalid command Two Object");
+                break;
+        }
+
+    }
+
+    private static void printHelp() {
+        player.yellowMessage("---- Bot Commands (!bot) ----");
+        player.yellowMessage("-- Creation & Lifecycle --");
+        player.yellowMessage("!bot create                      - create bots");
+        player.yellowMessage("!bot manualstart <cid>           - start bot manually");
+        player.yellowMessage("!bot manualstop <cid>            - stop bot manually");
+        player.yellowMessage("!bot disconnect/dc/remove <cid>  - remove bot from server");
+        player.yellowMessage("!bot masscreate <start> <end>    - create multiple bots");
+        player.yellowMessage("!bot massmanualstart <s> <e>     - start multiple bots");
+        player.yellowMessage("!bot massmanualstop <s> <e>      - stop multiple bots");
+        player.yellowMessage("-- Set Bot Type --");
+        player.yellowMessage("!bot fmbot <cid>                 - set as FM bot");
+        player.yellowMessage("!bot scrollbot <cid>             - set as scroll bot");
+        player.yellowMessage("!bot henesysbot <cid>            - set as Henesys bot");
+        player.yellowMessage("!bot tutbot <cid>                - set as tutorial bot");
+        player.yellowMessage("!bot dicebot <cid>               - set as dice bot");
+        player.yellowMessage("!bot sellingbot <cid>            - set as selling merchant");
+        player.yellowMessage("!bot buyingbot <cid>             - set as buying merchant");
+        player.yellowMessage("!bot nxbot <cid>                 - set as NX merchant");
+        player.yellowMessage("!bot gachabot <cid>              - set as gacha bot");
+        player.yellowMessage("!bot gzhbot <cid>                - set as game zone host");
+        player.yellowMessage("!bot blackjackbot <cid>          - set as blackjack dealer");
+        player.yellowMessage("!bot dgbot <cid>                 - set as drop game bot");
+        player.yellowMessage("!bot opqbot <cid>                - set as OPQ bot");
+        player.yellowMessage("!bot jqbot <cid>                 - set as JQ bot");
+        player.yellowMessage("-- Bot Conversion --");
+        player.yellowMessage("!bot convertfmbot <cid>          - convert to FM bot");
+        player.yellowMessage("!bot convertscrollbot <cid>      - convert to scroll bot");
+        player.yellowMessage("!bot massfmbot <start> <end>     - mass create FM bots");
+        player.yellowMessage("-- Loot --");
+        player.yellowMessage("!bot loot <cid>                  - loot at feet");
+        player.yellowMessage("!bot lootwide <cid>              - loot wide area");
+        player.yellowMessage("!bot lootlocation <cid>          - loot at your position");
+        player.yellowMessage("!bot lootownitems <cid>          - loot bot's own items");
+        player.yellowMessage("!bot loottargetsitems <cid>      - loot your items");
+        player.yellowMessage("-- Appearance --");
+        player.yellowMessage("!bot randombody <cid>            - random body decoration");
+        player.yellowMessage("!bot randomequips <cid>          - random equip decoration");
+        player.yellowMessage("!bot decoratenx <cid>            - apply NX decoration");
+        player.yellowMessage("!bot equip <cid> <itemid>        - equip item on bot");
+        player.yellowMessage("!bot sethair <cid> <hairid>      - set bot hair style");
+        player.yellowMessage("-- Movement --");
+        player.yellowMessage("!bot warphere <cid>              - warp bot to you");
+        player.yellowMessage("!bot enterportal <cid>           - bot enters nearest portal");
+        player.yellowMessage("!bot faceme <cid>                - bot faces towards you");
+        player.yellowMessage("!bot nudge <cid>                 - nudge bot 20 units");
+        player.yellowMessage("!bot nudgeoverlap <cid>          - nudge bot from overlap");
+        player.yellowMessage("-- Party --");
+        player.yellowMessage("!bot makeparty <cid>             - bot creates party");
+        player.yellowMessage("!bot leaveparty <cid>            - bot leaves party");
+        player.yellowMessage("!bot acceptparty <cid>           - bot accepts party invite");
+        player.yellowMessage("!bot rejectparty <cid>           - bot rejects party invite");
+        player.yellowMessage("!bot botinviteme <cid>           - bot invites you to party");
+        player.yellowMessage("!bot checkpartyqueue <cid>       - check pending invite");
+        player.yellowMessage("-- Blackjack --");
+        player.yellowMessage("!bot bjaddplayer <dealer> <cid>  - add player to BJ table");
+        player.yellowMessage("-- Chat & Megaphone --");
+        player.yellowMessage("!bot chat <cid> <message>        - bot speaks in chat");
+        player.yellowMessage("!bot bubbletype <cid> <msg>      - bot types in chat bubble");
+        player.yellowMessage("!bot smega <cid> <message>       - super megaphone");
+        player.yellowMessage("!bot avatarsmega <cid> <msg>     - avatar megaphone");
+        player.yellowMessage("!bot tv <cid> <message>          - MapleTV");
+        player.yellowMessage("!bot tvpartner <cid> <msg>       - MapleTV with partner");
+        player.yellowMessage("-- Recordings --");
+        player.yellowMessage("!bot playrec <cid> <name>        - play movement recording");
+        player.yellowMessage("-- Utility --");
+        player.yellowMessage("!bot meso <cid>                  - test drop commands");
+        player.yellowMessage("!bot hint                        - display chat hint commands");
+        player.yellowMessage("!bot expirehint                  - expire chat hint");
+        player.yellowMessage("!bot testslotinfo                - test equip by slot");
+        player.yellowMessage("!bot viewqueue                   - monitor message queue");
+        player.yellowMessage("!bot nxcode                      - create test NX code");
+    }
+
+    private static void testEquipDestinationSlot(Character chr, int itemId) {
+//        readPlayersEquip(chr, itemId);
+    }
+
+    private static void testEqBySlot(Character chr) {
+//        short slotCheck = (short) slot;
+//        readPlayerEquipBySlotId(chr, slotCheck);
+        String owner = readPlayerEquipBySlotName(chr, BodyPart.WEAPON).getOwner();
+        String itemName = convertItemIdToName(readPlayerEquipBySlotName(chr, BodyPart.WEAPON).getItemId());
+        debugprint(owner, itemName);
+        readPlayerCashEquipBySlotName(chr, BodyPart.WEAPON);
+
+        readPlayerEquipBySlotName(chr, BodyPart.SHOES);
+        readPlayerCashEquipBySlotName(chr, BodyPart.SHOES);
+
+        readPlayerEquipBySlotName(chr, BodyPart.CAP);
+        readPlayerCashEquipBySlotName(chr, BodyPart.CAP);
+
+        readPlayerEquipBySlotName(chr, BodyPart.COAT);
+        readPlayerCashEquipBySlotName(chr, BodyPart.COAT);
+
+        readPlayerEquipBySlotName(chr, BodyPart.PANTS);
+        readPlayerCashEquipBySlotName(chr, BodyPart.PANTS);
+
+        readPlayerEquipBySlotName(chr, BodyPart.EAR_ACCESSORY);
+        readPlayerCashEquipBySlotName(chr, BodyPart.EAR_ACCESSORY);
+
+        readPlayerEquipBySlotName(chr, BodyPart.MEDAL);
+    }
+
+
+//    private static void testCygnusHint(Character fakechar, Client c) {
+//        spawnCygnusGuide(fakechar,true);
+//        List<String> commands = List.of("Cho", "Han", "mmmmmmmmm");
+//        talkCygnusGuideCommands(fakechar, commands);
+//    }
+
+    private static void testDropCommands(Character fakechar, Client c) {
+//        botDropMeso(fakechar, 1000);
+//        botThrowMeso(fakechar, 1000, c.getPlayer().getPosition());
+//
+//        botDropEquip(fakechar, 1082223);
+//        botThrowEquip(fakechar, 1082223, c.getPlayer().getPosition());
+//
+//        botDropItem(fakechar, 4002000);
+//        botThrowItem(fakechar, 4002000, c.getPlayer().getPosition());
+//
+//        botDropItemQty(fakechar, 4002000, 10);
+//        botThrowItemQty(fakechar, 4002000, 10, c.getPlayer().getPosition());
+
+        botThrowToOwnerMeso(fakechar, 100, c.getPlayer());
+//        botThrowToOwnerItem(fakechar, 4002000, c.getPlayer());
+//        botThrowToOwnerItemQty(fakechar, 4002000, 10, c.getPlayer());
+//        botThrowToOwnerEquip(fakechar, 1082223, c.getPlayer());
+//
+//        botThrowToOwnerMeso(fakechar, 100, fakechar);
+//        botThrowToOwnerItem(fakechar, 4002000, fakechar);
+//        botThrowToOwnerItemQty(fakechar, 4002000, 10, fakechar);
+//        botThrowToOwnerEquip(fakechar, 1082223, fakechar);
+    }
+
+
+}

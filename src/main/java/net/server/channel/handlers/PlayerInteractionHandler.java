@@ -39,6 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.ItemInformationProvider;
 import server.Trade;
+import soloMapling.FreeMarket.ShopOfferSystem.OfferParser;
+import soloMapling.FreeMarket.ShopOfferSystem.ShopOfferSystem;
+import soloMapling.FreeMarket.ShopOfferSystem.ShopOfferWelcome;
 import server.maps.FieldLimit;
 import server.maps.HiredMerchant;
 import server.maps.MapObject;
@@ -325,21 +328,26 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                     }
                 }
             } else if (mode == Action.CHAT.getCode()) { // chat lol
+                String chatMsg = p.readString();
                 HiredMerchant merchant = chr.getHiredMerchant();
                 if (chr.getTrade() != null) {
-                    chr.getTrade().chat(p.readString());
+                    chr.getTrade().chat(chatMsg);
                 } else if (chr.getPlayerShop() != null) { //mini game
                     PlayerShop shop = chr.getPlayerShop();
                     if (shop != null) {
-                        shop.chat(c, p.readString());
+                        shop.chat(c, chatMsg);
+                        ShopOfferSystem.getInstance().onPlayerShopChat(chr, shop, chatMsg);
+                        boolean offerParsed = OfferParser.parse(chatMsg, shop.getItems()) != null;
+                        ShopOfferWelcome.onPlayerChat(chr, shop, offerParsed);
                     }
                 } else if (chr.getMiniGame() != null) {
                     MiniGame game = chr.getMiniGame();
                     if (game != null) {
-                        game.chat(c, p.readString());
+                        game.chat(c, chatMsg);
                     }
                 } else if (merchant != null) {
-                    merchant.sendMessage(chr, p.readString());
+                    merchant.sendMessage(chr, chatMsg);
+                    ShopOfferSystem.getInstance().onHiredMerchantChat(chr, merchant, chatMsg);
                 }
             } else if (mode == Action.EXIT.getCode()) {
                 if (chr.getTrade() != null) {
@@ -872,7 +880,7 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
             }
 
             Point cpos = chr.getPosition();
-            Portal portal = chr.getMap().findClosestTeleportPortal(cpos);
+            Portal portal = chr.getMap().findMarketPortal(); // findClosestTeleportPortal(cpos)
             if (portal != null && portal.getPosition().distance(cpos) < 120.0) {
                 chr.sendPacket(PacketCreator.getMiniRoomError(10));
                 return false;

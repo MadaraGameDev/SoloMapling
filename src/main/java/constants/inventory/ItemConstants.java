@@ -21,6 +21,7 @@
 */
 package constants.inventory;
 
+import client.inventory.BodyPart;
 import client.inventory.InventoryType;
 import config.YamlConfig;
 import constants.id.ItemId;
@@ -233,5 +234,58 @@ public final class ItemConstants {
 
     public static boolean isHair(int itemId) {
         return itemId >= 30000 && itemId < 35000;
+    }
+
+    public static int getItemPrefix(int itemId) {
+        return itemId / 10000;
+    }
+
+    public static int getEquipSlotType(int itemId) {
+        int itemPrefix = getItemPrefix(itemId);
+
+        if (isWeapon(itemId)) {
+            return BodyPart.WEAPON.getValue();
+        }
+
+        switch (itemPrefix) {
+            case 100:
+                return BodyPart.CAP.getValue();
+            case 101:
+                return BodyPart.FACE_ACCESSORY.getValue();
+            case 102:
+                return BodyPart.EYE_ACCESSORY.getValue();
+            case 103:
+                return BodyPart.EAR_ACCESSORY.getValue();
+            case 104:
+                return BodyPart.COAT.getValue();
+            case 105:
+                return BodyPart.LONGCOAT.getValue();
+            case 106:
+                return BodyPart.PANTS.getValue();
+            case 107:
+                return BodyPart.SHOES.getValue();
+            case 108:
+                return BodyPart.GLOVE.getValue();
+            case 109:
+            case 119:
+            case 134:
+                return BodyPart.SHIELD.getValue();
+            case 110:
+                return BodyPart.CAPE.getValue();
+            case 111:
+                return BodyPart.RING_1.getValue();
+            case 112:
+                return BodyPart.PENDANT.getValue();
+            case 113:
+                return BodyPart.BELT.getValue();
+            case 114:
+                return BodyPart.MEDAL.getValue();
+            case 115:
+                return BodyPart.SHOULDER.getValue();
+            case 118:
+                return BodyPart.BADGE.getValue();
+
+        }
+        return 0;
     }
 }

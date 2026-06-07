@@ -294,7 +294,7 @@ public class ItemInformationProvider {
         return blockMouse;
     }
 
-    private Data getItemData(int itemId) {
+    public Data getItemData(int itemId) {
         Data ret = null;
         String idStr = "0" + itemId;
         DataDirectoryEntry root = itemData.getRoot();
@@ -1116,7 +1116,7 @@ public class ItemInformationProvider {
                             break;
                     }
                     if (!ItemConstants.isCleanSlate(scrollId)) {
-                        if (!assertGM && !ItemConstants.isModifierScroll(scrollId)) {   // issue with modifier scrolls taking slots found thanks to Masterrulax, justin, BakaKnyx
+                        if (!ItemConstants.isModifierScroll(scrollId)) { // GM can scroll as normal // issue with modifier scrolls taking slots found thanks to Masterrulax, justin, BakaKnyx
                             nEquip.setUpgradeSlots((byte) (nEquip.getUpgradeSlots() - 1));
                         }
                         nEquip.setLevel((byte) (nEquip.getLevel() + 1));
@@ -2063,7 +2063,7 @@ public class ItemInformationProvider {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         int dropperid = rs.getInt("dropperid");
-                        itemid = getCrystalForLevel(LifeFactory.getMonsterLevel(dropperid));
+                        itemid = getCrystalForLevel(LifeFactory.getMonsterLevel(dropperid) - 1);
                     }
                 }
             }

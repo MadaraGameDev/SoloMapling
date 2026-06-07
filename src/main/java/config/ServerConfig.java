@@ -131,6 +131,10 @@ public class ServerConfig {
     public boolean USE_MAKER_PERMISSIVE_ATKUP;
     public boolean USE_MAKER_FEE_HEURISTICS;
 
+    //Custom Configuration
+    public boolean USE_ENABLE_CUSTOM_NPC_SCRIPT;
+    public boolean USE_STARTER_MERGE;
+
     //Commands Configuration
     public boolean BLOCK_GENERATE_CASH_ITEM;
     public boolean USE_WHOLE_SERVER_RANKING;

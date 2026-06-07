@@ -1,9 +1,6 @@
 package server.minigame;
 
 import client.Client;
-import client.inventory.Item;
-import client.inventory.manipulator.InventoryManipulator;
-import constants.id.ItemId;
 import tools.PacketCreator;
 import tools.Randomizer;
 
@@ -11,8 +8,15 @@ import tools.Randomizer;
  * @Author Arnah
  * @Website http://Vertisy.ca/
  * @since Aug 15, 2016
+ *
+ * Modified: meso-based double-or-nothing rewards instead of certificates.
+ * Entry cost: 1,000,000 mesos. Each win doubles the pot.
+ * Round 0 win = 1m, round 1 = 2m, round 2 = 4m ... round 9 = 512m.
+ * Player can exit after any win to collect, or continue to double.
  */
 public class RockPaperScissor {
+    public static final int ENTRY_COST = 1_000_000;
+
     private int round = 0;
     private boolean ableAnswer = true;
     private boolean win = false;
@@ -20,7 +24,7 @@ public class RockPaperScissor {
     public RockPaperScissor(final Client c, final byte mode) {
         c.sendPacket(PacketCreator.rpsMode((byte) (9 + mode)));
         if (mode == 0) {
-            c.getPlayer().gainMeso(-1000, true, true, true);
+            c.getPlayer().gainMeso(-ENTRY_COST, true, true, true);
         }
     }
 
@@ -70,9 +74,20 @@ public class RockPaperScissor {
         return false;
     }
 
+    /**
+     * Payout: ENTRY_COST * 2^(round+1).
+     * The +1 accounts for the entry fee — winning round 1 returns 2m (your 1m back + 1m profit).
+     * Round 1 = 2m, round 2 = 4m, round 3 = 8m ... round 10 = 1,024m.
+     */
+    private int getWinnings() {
+        return ENTRY_COST * (1 << (round + 1));
+    }
+
     public final void reward(final Client c) {
         if (win) {
-            InventoryManipulator.addFromDrop(c, new Item(ItemId.RPS_CERTIFICATE_BASE + round, (short) 0, (short) 1), true);
+            int payout = getWinnings();
+            c.getPlayer().gainMeso(payout, true, true, true);
+            c.getPlayer().dropMessage(5, "You won " + String.format("%,d", payout) + " mesos! (Round " + (round + 1) + ")");
         }
         c.getPlayer().setRPS(null);
     }

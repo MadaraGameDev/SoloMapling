@@ -38,9 +38,14 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static soloMapling.DebugUtilities.debugprint;
+
 public abstract class AbstractMovementPacketHandler extends AbstractPacketHandler {
     private static final Logger log = LoggerFactory.getLogger(AbstractMovementPacketHandler.class);
 
+    /*
+    todo SM NOTE - THIS IS USELESS, ONLY FOR PETS
+     */
     protected List<LifeMovementFragment> parseMovement(InPacket p) throws EmptyMovementException {
         List<LifeMovementFragment> res = new ArrayList<>();
         byte numCommands = p.readByte();
@@ -155,7 +160,113 @@ public abstract class AbstractMovementPacketHandler extends AbstractPacketHandle
         return res;
     }
 
+    /*
+    todo SM NOTE - this is for player movement
+     */
     protected void updatePosition(InPacket p, AnimatedMapObject target, int yOffset) throws EmptyMovementException {
+
+        byte numCommands = p.readByte();
+        if (numCommands < 1) {
+            throw new EmptyMovementException(p);
+        }
+        for (byte i = 0; i < numCommands; i++) {
+            byte command = p.readByte();
+            switch (command) {
+                case 0: // normal move
+                case 5:
+                case 17: { // Float
+                    //Absolute movement - only this is important for the server, other movement can be passed to the client
+                    short xpos = p.readShort(); //is signed fine here?
+                    short ypos = p.readShort();
+                    target.setPosition(new Point(xpos, ypos + yOffset));
+
+                    short xwobble = p.readShort();
+                    short ywobble = p.readShort();
+                    short fh = p.readShort();
+//                    p.skip(6);
+
+                    byte newstate = p.readByte();
+                    target.setStance(newstate);
+
+                    short duration = p.readShort(); //duration
+                    break;
+                }
+                case 1:
+                case 2:
+                case 6: // fj
+                case 12:
+                case 13: // Shot-jump-back thing
+                case 16: // Float
+                case 18:
+                case 19: // Springs on maps
+                case 20: // Aran Combat Step
+                case 22: {
+                    //Relative movement - server only cares about stance
+                    p.skip(4); //xpos = lea.readShort(); ypos = lea.readShort();
+                    byte newstate = p.readByte();
+                    target.setStance(newstate);
+                    short duration = p.readShort(); //duration
+
+                    break;
+                }
+                case 3:
+                case 4: // tele... -.-
+                case 7: // assaulter
+                case 8: // assassinate
+                case 9: // rush
+                case 11: //chair
+                {
+//                case 14: {
+                    //Teleport movement - same as above
+                    p.skip(8); //xpos = lea.readShort(); ypos = lea.readShort(); xwobble = lea.readShort(); ywobble = lea.readShort();
+                    byte newstate = p.readByte();
+                    target.setStance(newstate);
+
+                    break;
+                }
+                case 14:
+                    p.skip(9); // jump down (?)
+                    break;
+                case 10: // Change Equip
+                    //ignored server-side
+                    p.readByte();
+                    break;
+                /*case 11: { // Chair
+                    short xpos = lea.readShort();
+                    short ypos = lea.readShort();
+                    short fh = lea.readShort();
+                    byte newstate = lea.readByte();
+                    short duration = lea.readShort();
+                    ChairMovement cm = new ChairMovement(command, new Point(xpos, ypos), duration, newstate);
+                    cm.setFh(fh);
+                    res.add(cm);
+                    break;
+                }*/
+                case 15: {
+                    //Jump down movement - stance only
+                    p.skip(12); //short xpos = lea.readShort(); ypos = lea.readShort(); xwobble = lea.readShort(); ywobble = lea.readShort(); fh = lea.readShort(); ofh = lea.readShort();
+                    byte newstate = p.readByte();
+                    target.setStance(newstate);
+                    short duration = p.readShort(); // duration
+
+                    break;
+                }
+                case 21: {//Causes aran to do weird stuff when attacking o.o
+                    /*byte newstate = lea.readByte();
+                     short unk = lea.readShort();
+                     AranMovement am = new AranMovement(command, null, unk, newstate);
+                     res.add(am);*/
+                    p.skip(3);
+                    break;
+                }
+                default:
+                    log.warn("Unhandled Case: {}", command);
+                    throw new EmptyMovementException(p);
+            }
+        }
+    }
+
+    public static void updatePositionBot(InPacket p, AnimatedMapObject target, int yOffset) throws EmptyMovementException {
 
         byte numCommands = p.readByte();
         if (numCommands < 1) {
@@ -174,7 +285,8 @@ public abstract class AbstractMovementPacketHandler extends AbstractPacketHandle
                     p.skip(6); //xwobble = lea.readShort(); ywobble = lea.readShort(); fh = lea.readShort();
                     byte newstate = p.readByte();
                     target.setStance(newstate);
-                    p.readShort(); //duration
+                    short duration = p.readShort(); //duration
+
                     break;
                 }
                 case 1:
@@ -248,4 +360,6 @@ public abstract class AbstractMovementPacketHandler extends AbstractPacketHandle
             }
         }
     }
+
+
 }

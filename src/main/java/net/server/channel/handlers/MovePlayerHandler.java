@@ -26,9 +26,16 @@ import net.packet.InPacket;
 import tools.PacketCreator;
 import tools.exceptions.EmptyMovementException;
 
+
+import static soloMapling.ArtificialPlayer.BotMovementSystem.InPacketReader.recordMovementInPacketToBinaryAndCSV;
+import static soloMapling.ArtificialPlayer.BotMovementSystem.InPacketReader.getMoveDataRecording;
+
 public final class MovePlayerHandler extends AbstractMovementPacketHandler {
     @Override
     public final void handlePacket(InPacket p, Client c) {
+        if (getMoveDataRecording()) {
+            recordMovementInPacketToBinaryAndCSV(p);
+        }
         p.skip(9);
         try {   // thanks Sa for noticing empty movement sequences crashing players
             int movementDataStart = p.getPosition();
@@ -37,6 +44,7 @@ public final class MovePlayerHandler extends AbstractMovementPacketHandler {
             p.seek(movementDataStart);
 
             c.getPlayer().getMap().movePlayer(c.getPlayer(), c.getPlayer().getPosition());
+
             if (c.getPlayer().isHidden()) {
                 c.getPlayer().getMap().broadcastGMMessage(c.getPlayer(), PacketCreator.movePlayer(c.getPlayer().getId(), p, movementDataLength), false);
             } else {

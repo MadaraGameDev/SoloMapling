@@ -43,6 +43,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static soloMapling.ArtificialPlayer.BotHelpers.isBot;
+
 /**
  * @author Matze
  * @author Ronan - concurrency protection
@@ -126,7 +128,7 @@ public class PlayerShop extends AbstractMapObject {
         for (int i = 0; i < 3; i++) {
             if (visitors[i] == null) {
                 visitors[i] = visitor;
-                visitor.setSlot(i);
+                visitor.setSlot(i+1);
 
                 this.broadcast(PacketCreator.getPlayerShopNewVisitor(visitor, i + 1));
                 owner.getMap().broadcastMessage(PacketCreator.updatePlayerShopBox(this));
@@ -146,10 +148,9 @@ public class PlayerShop extends AbstractMapObject {
             for (int i = 0; i < 3; i++) {
                 if (visitors[i] != null && visitors[i].getId() == visitor.getId()) {
                     visitors[i].setPlayerShop(null);
+                    visitors[i].sendPacket(PacketCreator.getPlayerShopRemoveVisitor(i+1));
                     visitors[i] = null;
                     visitor.setSlot(-1);
-
-                    this.broadcast(PacketCreator.getPlayerShopRemoveVisitor(i + 1));
                     owner.getMap().broadcastMessage(PacketCreator.updatePlayerShopBox(this));
                     return;
                 }
@@ -159,6 +160,52 @@ public class PlayerShop extends AbstractMapObject {
         }
     }
 
+    /*
+    Original Cosmic removeVisitor
+     */
+//    public void removeVisitor(Character visitor) {
+//        if (visitor == owner) {
+//            owner.getMap().removeMapObject(this);
+//            owner.setPlayerShop(null);
+//        } else {
+//            visitorLock.lock();
+//            try {
+//                for (int i = 0; i < 3; i++) {
+//                    if (visitors[i] != null && visitors[i].getId() == visitor.getId()) {
+//                        visitor.setSlot(-1);    //absolutely cant remove player slot for late players without dc'ing them... heh
+//
+//                        for (int j = i; j < 2; j++) {
+//                            if (visitors[j] != null) {
+//                                owner.sendPacket(PacketCreator.getPlayerShopRemoveVisitor(j + 1));
+//                            }
+//                            visitors[j] = visitors[j + 1];
+//                            if (visitors[j] != null) {
+//                                visitors[j].setSlot(j);
+//                            }
+//                        }
+//                        visitors[2] = null;
+//                        for (int j = i; j < 2; j++) {
+//                            if (visitors[j] != null) {
+//                                owner.sendPacket(PacketCreator.getPlayerShopNewVisitor(visitors[j], j + 1));
+//                            }
+//                        }
+//
+//                        this.broadcastRestoreToVisitors();
+//                        owner.getMap().broadcastMessage(PacketCreator.updatePlayerShopBox(this));
+//                        return;
+//                    }
+//                }
+//            } finally {
+//                visitorLock.unlock();
+//            }
+//
+//            owner.getMap().broadcastMessage(PacketCreator.updatePlayerShopBox(this));
+//        }
+//    }
+
+    /*
+    Madara Custom Version. Fix
+     */
     public void removeVisitor(Character visitor) {
         if (visitor == owner) {
             owner.getMap().removeMapObject(this);
@@ -166,36 +213,23 @@ public class PlayerShop extends AbstractMapObject {
         } else {
             visitorLock.lock();
             try {
-                for (int i = 0; i < 3; i++) {
-                    if (visitors[i] != null && visitors[i].getId() == visitor.getId()) {
-                        visitor.setSlot(-1);    //absolutely cant remove player slot for late players without dc'ing them... heh
-
-                        for (int j = i; j < 2; j++) {
-                            if (visitors[j] != null) {
-                                owner.sendPacket(PacketCreator.getPlayerShopRemoveVisitor(j + 1));
-                            }
-                            visitors[j] = visitors[j + 1];
-                            if (visitors[j] != null) {
-                                visitors[j].setSlot(j);
-                            }
-                        }
-                        visitors[2] = null;
-                        for (int j = i; j < 2; j++) {
-                            if (visitors[j] != null) {
-                                owner.sendPacket(PacketCreator.getPlayerShopNewVisitor(visitors[j], j + 1));
-                            }
-                        }
-
-                        this.broadcastRestoreToVisitors();
-                        owner.getMap().broadcastMessage(PacketCreator.updatePlayerShopBox(this));
-                        return;
-                    }
+                int slot = getVisitorSlot(visitor);
+                if (slot < 0) { //Not found
+                    return;
                 }
+                visitor.setSlot(-1);
+                visitor.setPlayerShop(null);
+                try {
+                    visitors[slot - 1] = null;
+                } catch (Exception e) {
+                    // Random bot visitor slot issue, just throw it
+                }
+                getOwner().sendPacket(PacketCreator.getPlayerShopRemoveVisitor(slot));
+                broadcastToVisitorsThreadsafe(PacketCreator.getPlayerShopRemoveVisitor(slot));
+                owner.getMap().broadcastMessage(PacketCreator.updatePlayerShopBox(this));
             } finally {
                 visitorLock.unlock();
             }
-
-            owner.getMap().broadcastMessage(PacketCreator.updatePlayerShopBox(this));
         }
     }
 
@@ -328,39 +362,46 @@ public class PlayerShop extends AbstractMapObject {
         }
     }
 
-    public void broadcastToVisitors(Packet packet) {
+    public void broadcastToVisitorsThreadsafe(Packet packet) {
         visitorLock.lock();
         try {
-            for (int i = 0; i < 3; i++) {
-                if (visitors[i] != null) {
-                    visitors[i].sendPacket(packet);
-                }
-            }
+            broadcastToVisitors(packet);
         } finally {
             visitorLock.unlock();
         }
     }
 
-    public void broadcastRestoreToVisitors() {
-        visitorLock.lock();
-        try {
-            for (int i = 0; i < 3; i++) {
-                if (visitors[i] != null) {
-                    visitors[i].sendPacket(PacketCreator.getPlayerShopRemoveVisitor(i + 1));
-                }
+    private void broadcastToVisitors(Packet packet) {
+        for (Character visitor : visitors) {
+            if (visitor != null && !isBot(visitor)) {
+                visitor.sendPacket(packet);
             }
-
-            for (int i = 0; i < 3; i++) {
-                if (visitors[i] != null) {
-                    visitors[i].sendPacket(PacketCreator.getPlayerShop(this, false));
-                }
-            }
-
-            recoverChatLog();
-        } finally {
-            visitorLock.unlock();
         }
     }
+
+    /*
+    Original bandaid fix for Slot #1 leaving with Higher slots occupied. Obsolete
+     */
+//    public void broadcastRestoreToVisitors(int slot) {
+//        visitorLock.lock();
+//        try {
+//            for (int i = 0; i < 3; i++) {
+//                if (visitors[i] != null) {
+//                    visitors[i].sendPacket(PacketCreator.getPlayerShopRemoveVisitor(slot));
+//                }
+//            }
+//
+//            for (int i = 0; i < 3; i++) {
+//                if (visitors[i] != null) {
+//                    visitors[i].sendPacket(PacketCreator.getPlayerShop(this, false));
+//                }
+//            }
+//
+////            recoverChatLog();
+//        } finally {
+//            visitorLock.unlock();
+//        }
+//    }
 
     public void removeVisitors() {
         List<Character> visitorList = new ArrayList<>(3);
@@ -394,7 +435,7 @@ public class PlayerShop extends AbstractMapObject {
         if (client != null) {
             client.sendPacket(packet);
         }
-        broadcastToVisitors(packet);
+        broadcastToVisitorsThreadsafe(packet);
     }
 
     private byte getVisitorSlot(Character chr) {
@@ -427,13 +468,27 @@ public class PlayerShop extends AbstractMapObject {
         broadcast(PacketCreator.getPlayerShopChat(c.getPlayer(), chat, s));
     }
 
+    public void chat(Character player, String chat) {
+        byte s = getVisitorSlot(player);
+
+        synchronized (chatLog) {
+            chatLog.add(new Pair<>(player, chat));
+            if (chatLog.size() > 25) {
+                chatLog.remove(0);
+            }
+            chatSlot.put(player.getId(), s);
+        }
+
+        broadcast(PacketCreator.getPlayerShopChat(player, chat, s));
+    }
+
     private void recoverChatLog() {
         synchronized (chatLog) {
             for (Pair<Character, String> it : chatLog) {
                 Character chr = it.getLeft();
                 Byte pos = chatSlot.get(chr.getId());
 
-                broadcastToVisitors(PacketCreator.getPlayerShopChat(chr, it.getRight(), pos));
+                broadcastToVisitorsThreadsafe(PacketCreator.getPlayerShopChat(chr, it.getRight(), pos));
             }
         }
     }
@@ -453,7 +508,7 @@ public class PlayerShop extends AbstractMapObject {
     public void sendShop(Client c) {
         visitorLock.lock();
         try {
-            c.sendPacket(PacketCreator.getPlayerShop(this, isOwner(c.getPlayer())));
+            c.sendPacket(PacketCreator.getPlayerShop(this, (c.getPlayer())));
         } finally {
             visitorLock.unlock();
         }
@@ -480,6 +535,16 @@ public class PlayerShop extends AbstractMapObject {
     public List<PlayerShopItem> getItems() {
         synchronized (items) {
             return Collections.unmodifiableList(items);
+        }
+    }
+
+    /**
+     * Sets the item to the premade Shop.
+     * Only to be used for Converting premade Artificial Hired Merchants to Bot Player Store Permits
+     */
+    public void setItems(List<PlayerShopItem> premadeShop) {
+        synchronized (items) {
+            items.addAll(premadeShop);
         }
     }
 
@@ -545,7 +610,12 @@ public class PlayerShop extends AbstractMapObject {
             if (this.hasFreeSlot() && !this.isVisitor(chr)) {
                 this.addVisitor(chr);
                 chr.setPlayerShop(this);
-                this.sendShop(chr.getClient());
+                if (!isBot(chr)) {
+                    this.sendShop(chr.getClient());
+                    if (isBot(owner)) {
+                        soloMapling.FreeMarket.ShopOfferSystem.ShopOfferWelcome.onPlayerEnterShop(this, chr);
+                    }
+                }
 
                 return true;
             }
@@ -622,4 +692,48 @@ public class PlayerShop extends AbstractMapObject {
             return mesos;
         }
     }
+
+    /*
+    SoloMapling botBuy on player store permits
+     */
+    public boolean botBuy(Character fakechar, PlayerShopItem pItem, int itemPosition, short quantity) {
+        synchronized (items) {
+            Item newItem = pItem.getItem().copy();
+            newItem.setQuantity((short) ((pItem.getItem().getQuantity() * quantity)));
+            visitorLock.lock();
+            try {
+                int price = (int) Math.min((float) pItem.getPrice() * quantity, Integer.MAX_VALUE);
+
+                if (!owner.canHoldMeso(price)) {    // thanks Rohenn for noticing owner hold check misplaced
+                    fakechar.dropMessage(1, "Transaction failed since the shop owner can't hold any more mesos.");
+                    return false;
+                }
+
+                price -= Trade.getFee(price);  // thanks BHB for pointing out trade fees not applying here
+                owner.gainMeso(price, true);
+
+                SoldItem soldItem = new SoldItem(fakechar.getName(), pItem.getItem().getItemId(), quantity, price);
+                owner.sendPacket(PacketCreator.getPlayerShopOwnerUpdate(soldItem, itemPosition));
+
+                synchronized (sold) {
+                    sold.add(soldItem);
+                }
+
+                pItem.setBundles((short) (pItem.getBundles() - quantity));
+                if (pItem.getBundles() < 1) {
+                    pItem.setDoesExist(false);
+                    if (++boughtnumber == items.size()) {
+                        owner.setPlayerShop(null);
+                        this.setOpen(false);
+                        this.closeShop();
+                        owner.dropMessage(1, "Your items are sold out, and therefore your shop is closed.");
+                    }
+                }
+                return true;
+            } finally {
+                visitorLock.unlock();
+            }
+        }
+    }
+
 }

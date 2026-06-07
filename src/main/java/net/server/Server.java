@@ -36,7 +36,6 @@ import constants.game.GameConstants;
 import constants.inventory.ItemConstants;
 import constants.net.OpcodeConstants;
 import constants.net.ServerConstants;
-import database.DatabaseMigrations;
 import database.note.NoteDao;
 import net.ChannelDependencies;
 import net.PacketProcessor;
@@ -870,8 +869,6 @@ public class Server {
             throw new IllegalStateException("Failed to initiate a connection to the database");
         }
 
-        DatabaseMigrations.runDatabaseMigrations();
-
         channelDependencies = registerChannelDependencies();
 
         final ExecutorService initExecutor = Executors.newFixedThreadPool(10);
@@ -901,6 +898,8 @@ public class Server {
             log.error("Failed to run all startup-bound database tasks", sqle);
             throw new IllegalStateException(sqle);
         }
+
+        soloMapling.Casino.WzXmlPatcher.applyAllPatches();
 
         ThreadManager.getInstance().start();
         initializeTimelyTasks(channelDependencies);    // aggregated method for timely tasks thanks to lxconan
