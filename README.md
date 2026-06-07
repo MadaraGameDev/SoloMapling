@@ -1,4 +1,9 @@
-﻿# Cosmic
+﻿# SoloMapling
+
+This marks the very base of SoloMapling. The latest commit by Cosmic is on Feb 3rd, 2026 - fec53bc7714dc0f1ae3f50b2986cdf2727e0912a
+Going Forward will be SoloMapling related files
+
+# Cosmic
 Cosmic is a server emulator for Global MapleStory (GMS) version 83.
 
 ## Introduction
