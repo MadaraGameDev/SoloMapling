@@ -9670,7 +9670,7 @@
       <canvas name="iconRaw" width="28" height="28">
         <vector name="origin" x="-2" y="29"/>
       </canvas>
-      <int name="price" value="250"/>
+      <int name="price" value="10000"/>
     </imgdir>
   </imgdir>
   <imgdir name="04002001">
@@ -9681,7 +9681,7 @@
       <canvas name="iconRaw" width="28" height="28">
         <vector name="origin" x="-2" y="29"/>
       </canvas>
-      <int name="price" value="350"/>
+      <int name="price" value="50000"/>
     </imgdir>
   </imgdir>
   <imgdir name="04002002">
@@ -9692,7 +9692,7 @@
       <canvas name="iconRaw" width="28" height="28">
         <vector name="origin" x="-2" y="29"/>
       </canvas>
-      <int name="price" value="400"/>
+      <int name="price" value="250000"/>
     </imgdir>
   </imgdir>
   <imgdir name="04002003">
@@ -9703,7 +9703,7 @@
       <canvas name="iconRaw" width="28" height="28">
         <vector name="origin" x="-2" y="29"/>
       </canvas>
-      <int name="price" value="350"/>
+      <int name="price" value="1000000"/>
     </imgdir>
   </imgdir>
   <imgdir name="04003000">

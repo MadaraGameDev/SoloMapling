@@ -119,17 +119,23 @@ function action(mode, type, selection) {
 
                 break;
             case 920010400: //lobby
-                if (eim.getIntProperty("statusStg3") == -1) {
-                    cm.sendOk("Please, find the LP for the current day of week and place it on the music player.\r\n#v4001056# Sunday\r\n#v4001057# Monday\r\n#v4001058# Tuesday\r\n#v4001059# Wednesday\r\n#v4001060# Thursday\r\n#v4001061# Friday\r\n#v4001062# Saturday\r\n");
-                } else if (eim.getIntProperty("statusStg3") == 0) {
+                if (eim.getIntProperty("statusStg3") == 0) {
                     cm.getMap().getReactorByName("stone3").forceHitReactor(1);
                     cm.sendOk("Ooh, the music... It sounds so fitting with the ambient. Nicely done, a box has appeared on the field. Retrieve the statue part from it!");
                     eim.giveEventPlayersExp(3500);
                     clearStage(3, eim);
                     eim.setProperty("statusStg3", "2");
-
                 } else {
-                    cm.sendOk("Thank you so much!");
+                    if (status == 0) {
+                        cm.sendSimple("I am Chamberlain Eak. What would you like to do?\r\n#L0#Tell me about this stage.#l\r\n#L1#We're done here. Leave the Party Quest.#l");
+                        return;
+                    } else if (status == 1) {
+                        if (selection == 0) {
+                            cm.sendOk("Find the LP records hidden in the boxes above and place the correct one on the music player.\r\n#v4001056# Sunday\r\n#v4001057# Monday\r\n#v4001058# Tuesday\r\n#v4001059# Wednesday\r\n#v4001060# Thursday\r\n#v4001061# Friday\r\n#v4001062# Saturday\r\n");
+                        } else if (selection == 1) {
+                            cm.warp(920011200);
+                        }
+                    }
                 }
                 break;
             case 920010500: //sealed
