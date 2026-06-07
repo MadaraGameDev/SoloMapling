@@ -1,0 +1,135 @@
+JQBot:
+  AttemptStart:
+    text:
+      - "ok here we go"
+      - "lets try this again"
+      - "one more time"
+      - "alright lets do it"
+      - "focus focus focus"
+      - "i got this"
+      - "wish me luck"
+      - "deep breaths"
+      - "ok round two. or three. i lost count"
+      - "this time for sure"
+      - "no more messing around"
+      - "im feeling it this time"
+      - "lets gooo"
+      - "ok ok ok here we go"
+    emote:
+      - 0
+      - 2
+      - 5
+    wait: 1
+  MidJQ:
+    text:
+      - "easy"
+      - "ok ok"
+      - "careful..."
+      - "dont look down"
+      - "so far so good"
+      - "cmon cmon cmon"
+      - "im actually doing it"
+      - "wait"
+      - "hold on"
+      - "almost"
+      - "focus"
+      - "this part is tricky"
+      - "i hate this part"
+      - "ok nice"
+      - "keep going keep going"
+      - "steady..."
+      - "why is this so hard"
+      - "one jump at a time"
+      - "please dont fall"
+      - "im sweating"
+    emote:
+      - 0
+      - 2
+    wait: 1
+  FailReaction:
+    text:
+      - "NOOO"
+      - "are u serious rn"
+      - "i was so close"
+      - "ugh"
+      - "that jump is impossible"
+      - "how did i miss that"
+      - "pain"
+      - "bruh"
+      - "ok whatever"
+      - "this jq hates me"
+      - "i literally pressed jump"
+      - "lag"
+      - "my keyboard is broken i swear"
+      - "whyyy"
+      - "sigh"
+      - "ok not my best attempt"
+      - "i was doing so good too"
+      - "the wind pushed me off"
+      - "im blaming my pet for that one"
+      - "that platform is cursed"
+    emote:
+      - 1
+      - 4
+      - 7
+    wait: 1
+  SuccessReaction:
+    text:
+      - "I MADE IT"
+      - "LETS GOOOO"
+      - "finally omg"
+      - "YESSSSS"
+      - "that was actually insane"
+      - "im literally shaking"
+      - "never doubted myself for a second"
+      - "EZ"
+      - "ok that was hard but I did it"
+      - "someone screenshot this"
+      - "all those fails were worth it"
+      - "THE TOP"
+      - "i cant believe i actually made it"
+      - "bow down"
+      - "persistence pays off"
+      - "im the JQ king"
+      - "that was the hardest thing ive ever done in this game"
+    emote:
+      - 2
+      - 5
+      - 17
+    wait: 1
+  RestChat:
+    text:
+      - "ok let me catch my breath"
+      - "one sec"
+      - "my hands are cramping"
+      - "i need a second"
+      - "that was rough"
+      - "ok ok lets think about this"
+      - "maybe i should watch someone else do it first"
+      - "alright alright"
+      - "im not quitting"
+      - "just resting for a sec"
+      - "how do ppl do this so fast"
+      - "my fingers hurt"
+      - "ok new strategy"
+      - "i got closer that time right?"
+    emote:
+      - 0
+      - 3
+    wait: 1
+  LeavingJQ:
+    text:
+      - "ok im done for now"
+      - "thats enough jq for today"
+      - "my hands need a break"
+      - "back to henesys"
+      - "gg jq"
+      - "time to go chill"
+      - "that was fun actually"
+      - "ill be back for more later"
+      - "alright peace out pet park"
+      - "i need to go buy some pots after that"
+    emote:
+      - 0
+      - 2
+    wait: 1

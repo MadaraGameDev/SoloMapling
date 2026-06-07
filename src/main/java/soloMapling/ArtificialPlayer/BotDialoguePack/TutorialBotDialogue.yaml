@@ -1,0 +1,128 @@
+TutorialBot:
+  Greeting:
+    text:
+      - "Hey there %RESP_NAME! Welcome to SoloMapling!"
+    emote: 2
+    wait: 1
+  Inquiry:
+    text:
+      - "Is this your first time in this server?"
+    emote: 6
+    wait: 1
+  AskAdmin:
+    text:
+      - "Before we get started with the tour..."
+      - "This server is in beta testing, so we're looking for admins to help out."
+      - "Would you like to become a server admin? You'll get full GM powers and some starter gear."
+    emote: 6
+    wait: 1
+  GrantAdmin:
+    text:
+      - "Awesome! Welcome aboard, admin!"
+      - "I've powered you up to Level 150 Night Lord with full GM access."
+      - "I also generated two 25,000 NX codes for you. Write these down:"
+      - "%NX_CODE"
+      - "%NX_CODE_2"
+      - "Redeem them in the Cash Shop. Now let me trade you some supplies..."
+    emote: 2
+    wait: 2
+  GiftTradeIntro:
+    text:
+      - "Accept my trade request and I'll hook you up with mesos, potions, and throwing stars."
+    emote: 2
+    wait: 1
+  Tutorial_1:
+    text:
+      - "In order to talk to other players, say their exact full name"
+      - "For example, if you wanted to talk to me, you would type in %CHR_NAME"
+      - "Keep in mind that it needs to match the player's name exactly!"
+    emote: 3
+    wait: 1
+  Tutorial_2:
+    text:
+      - "Next up, other players might ask for your response."
+      - "In order to respond, simply type in the exact option you wish to choose (non case sensitive)"
+      - "Let's try it out. Which hat would you like to keep?"
+    emote: 1
+    wait: 1
+  AnalyzePlayersWeapon:
+    text:
+      - "That %WPN_NAME you've got in your hand there..."
+      - "Drop it on the floor, let me check it out."
+    emote: 3
+    wait: 1
+  LootDialogue:
+    text:
+      - "Hmmmm...."
+      - "This is a freshly made clean %WPN_NAME..."
+      - "Watch carefully. I'm about to enhance it with the power of GAMBLING."
+    emote: 1
+    wait: 6
+  UpgradeDialogue:
+    text:
+      - "BOOM! Just like that, it's been upgraded."
+      - "No need to thank me, just passing it forward to a newbie :P"
+    emote: 3
+    wait: 1
+  ReturnDialogue:
+    text:
+      - "Now, this was just a freebie from me."
+      - "Out there in the real world, you won't run into people as generous as me."
+      - "In the online world, everybody is out to get you, and take advantage of you."
+      - "Be very cautious when dealing with other players. You won't know their true intentions."
+      - "One way to determine their reputation is their Fame level."
+      - "The higher the fame, the more likely they are to have a good reputation."
+      - "That also goes vice-versa: the lower the fame, the more likely they are to be a scammer."
+    emote: 3
+    wait: 1
+  SendoffDialogue:
+    text:
+      - "That's all I have to show you for now."
+      - "Let me show you to the portal. Follow me."
+    emote: 2
+    wait: 1
+  SendoffPartingGiftDialogue:
+    text:
+      - "Take this apple as a parting gift."
+      - "It's a special apple. It'll grant you unbelievable powers for a short period of time."
+      - "Use it when you need to exceed your limits."
+      - "Good luck out there adventurer!"
+    emote: 2
+    wait: 1
+  Flavor:
+    text:
+      - "Ooh, I can't wait to meet our newest adventurers! *bounces excitedly*"
+      - "Welcome to Maple World, where every journey begins with a single step~!"
+      - "Did you know my grandmother taught me everything about adventuring? I'd love to pass that knowledge on!"
+      - "The Slimes around here are perfect for practice - they're bouncy and barely intimidating at all!"
+      - "*adjusts teaching hat* Another beautiful day to help new heroes find their path!"
+      - "Heehee, being a guide is the best job in all the realms! Who will I get to meet today?"
+      - "The magic in the air feels extra sparkly today - perfect for teaching new adventurers!"
+      - "*organizing training equipment* Everything must be perfect for our newest heroes-in-training!"
+      - "I remember my first day as an adventurer like it was yesterday... Oh, how exciting to help others start their journey!"
+      - "They say every great hero started somewhere - I'm just happy to be part of their beginning!"
+      - "*polishes a tiny wooden sword* You never know when a new adventurer might need a starter weapon!"
+      - "I wonder what kind of hero our next visitor will become... Warrior? Mage? The possibilities!"
+      - "The Mushroom Kingdom has been awfully quiet lately... perfect conditions for training!"
+      - "Did you know that every journey of a thousand levels begins with a single Snail Shell Throw?"
+      - "I love seeing the determination in a new adventurer's eyes. Reminds me of my own first steps~"
+      - "*hums the Maple Island theme* Such a nostalgic melody, don't you think?"
+      - "Pro tip from your favorite guide: always keep your potions stocked! Trust me on this one."
+      - "Some heroes are born great, some achieve greatness, and some just really enjoy bonking slimes!"
+      - "My record for most adventurers helped in a single day is 47! Let's see if we can beat that!"
+      - "Remember: there are no weak classes, only weak adventurers! ...Okay, maybe some classes are a teensy bit stronger."
+      - "*practices teaching poses in front of a mirror* First impressions are everything!"
+      - "The world out there can be dangerous, but that's what makes it an adventure!"
+      - "I keep a scrapbook of every adventurer I've helped. It's... very thick at this point."
+      - "Ah, the fresh breeze of adventure! Can you feel it?"
+      - "If at first you don't succeed... buy more potions!"
+      - "*stretching* Gotta stay limber in case a new adventurer needs a demonstration!"
+      - "You know what I always say: a prepared adventurer is a living adventurer!"
+      - "I wonder if any of my former students have become famous heroes by now..."
+      - "The secret to success? Patience, persistence, and a really good weapon!"
+      - "*looks out over the training grounds* Another quiet day... but adventure could arrive any moment!"
+      - "Did I mention I once taught a future guild leader? True story! ...Probably!"
+      - "Always remember to save your mesos, young ones! The Free Market can be... tempting."
+      - "I've been doing this job for years and it never gets old. Every adventurer has a unique story!"
+    emote: 2
+    wait: 1

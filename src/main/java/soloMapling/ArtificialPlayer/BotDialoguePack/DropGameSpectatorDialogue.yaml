@@ -1,0 +1,67 @@
+DropGameSpectator:
+  Excitement:
+    text:
+      - "Omg {item}??"
+      - "No way he dropped a {item}!!"
+      - "Wow {item}!!"
+      - "Dude {item}!! Grab it!!"
+      - "{item}!! Lucky!!"
+      - "Yooo is that a {item}?!"
+      - "HE DROPPED A {item}"
+      - "omg {item} go go go"
+      - "{item}??? No wayyy"
+      - "Bro the {item}!!"
+    emote: 2
+    wait: 0
+
+  Envy:
+    text:
+      - "I wish I had that {item}"
+      - "Man I need a {item} so bad"
+      - "Ugh why can't I have a {item}"
+      - "That {item} would look so good on me"
+      - "I've been trying to get a {item} for weeks"
+      - "That {item} tho..."
+      - "Imagine having a {item}"
+      - "give me that {item} pls"
+    emote: 6
+    wait: 0
+
+  Hype:
+    text:
+      - "THIS IS CRAZY"
+      - "Yooo the drops are insane"
+      - "So many good items!!"
+      - "This drop game is stacked"
+      - "Bruh the loot!!"
+      - "This is nuts lol"
+      - "im losing my mind rn"
+      - "he's going off"
+      - "LETS GOOO"
+      - "the drops keep coming!!"
+    emote: 5
+    wait: 0
+
+  Question:
+    text:
+      - "Did he just drop a {item}??"
+      - "Wait was that a {item}?"
+      - "Is that really a {item} on the ground?"
+      - "Bro did I just see a {item}?"
+      - "Hold on... {item}??"
+      - "Was that actually a {item}?"
+    emote: 4
+    wait: 0
+
+  Cheer:
+    text:
+      - "LETS GO"
+      - "NICE"
+      - "GET IT"
+      - "GOOO"
+      - "Hype!!"
+      - "Get em!!"
+      - "Yooo go!"
+      - "Run run run"
+    emote: 11
+    wait: 0

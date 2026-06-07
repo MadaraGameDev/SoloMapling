@@ -1,0 +1,99 @@
+GameZoneHostBot:
+  PassiveGreeting:
+    text:
+      - "Welcome to the Henesys Game Zone! Try your luck today!"
+      - "Hey there, %PLAYER_NAME%! The tables are hot tonight!"
+      - "Step right up, %PLAYER_NAME%! Fortune favors the bold!"
+      - "Ah, %PLAYER_NAME%! Another brave soul enters the Game Zone!"
+      - "Welcome, welcome! The Game Zone awaits, %PLAYER_NAME%!"
+      - "Well well well, if it isn't %PLAYER_NAME%! Ready to play?"
+      - "%PLAYER_NAME%! Back for more? I like your style!"
+      - "The Game Zone just got more interesting. Welcome, %PLAYER_NAME%!"
+      - "Looking for some excitement, %PLAYER_NAME%? You've come to the right place!"
+      - "Ah, a new face! Welcome to the fun, %PLAYER_NAME%!"
+      - "%PLAYER_NAME%! Pull up a chair, the games are just getting started!"
+      - "Hey %PLAYER_NAME%! The dice are warm and the cards are shuffled!"
+      - "Another brave adventurer enters the Game Zone! Welcome, %PLAYER_NAME%!"
+    emote: 2
+    wait: 3
+  DrinkOffer:
+    text:
+      - "You look thirsty! Can I get you a drink?"
+      - "Thirsty? I've got just the thing!"
+      - "Can I interest you in a refreshment?"
+      - "Every player deserves a drink! What do you say?"
+      - "Looking parched there! Let me fix that!"
+    emote: 2
+    wait: 2
+  DrinkSelection:
+    text:
+      - "What'll it be? Take your pick."
+      - "We've got a nice selection! Choose wisely!"
+      - "Pick your poison! ...figuratively speaking, of course."
+      - "One drink, coming right up! What's your pleasure?"
+    emote: 5
+    wait: 2
+  ServeDrink:
+    text:
+      - "Here you go! Enjoy!"
+      - "Cheers! Drink up!"
+      - "One refreshment, served with style!"
+      - "There you go! On the house... sort of!"
+    emote: 2
+    wait: 1
+  DeclineResponse:
+    text:
+      - "No worries! Let me know if you change your mind."
+      - "All good! The offer stands whenever you want it!"
+      - "Suit yourself! More for the next customer, heh."
+      - "No problem at all! The games are what matter anyway!"
+    emote: 4
+    wait: 2
+  Farewell:
+    text:
+      - "Good luck out there!"
+      - "May the odds be ever in your favor!"
+      - "Enjoy your time in the Game Zone!"
+      - "Come back anytime, the tables are always open!"
+      - "Take care out there, and remember where the fun is!"
+      - "Until next time! The Game Zone never sleeps!"
+      - "Don't spend all those winnings in one place!"
+      - "See you next round, champion!"
+      - "The Game Zone will be here whenever you need a break from grinding!"
+      - "Safe travels! And remember, fortune favors those who return!"
+    emote: 2
+    wait: 2
+  Flavor:
+    text:
+      - "Come one, come all! The Game Zone is open for business!"
+      - "Who wants to test their luck today?"
+      - "Big winners at the dice tables tonight!"
+      - "The house always wins... or does it?"
+      - "Place your bets, ladies and gentlemen!"
+      - "Another beautiful day in the Game Zone!"
+      - "Roll the dice, spin the wheel, try your luck!"
+      - "Step right up, don't be shy! Everyone's a winner... eventually!"
+      - "The tables are calling your name! Can you hear them?"
+      - "We've had some big winners tonight! Who's next?"
+      - "Nothing ventured, nothing gained! The Game Zone is open!"
+      - "Tired of grinding? Come take a load off and play some games!"
+      - "The cards don't care about your level, only your luck!"
+      - "I've seen fortunes made and lost at these tables. That's the thrill!"
+      - "Every champion was once a newcomer. Come try your hand!"
+      - "The Game Zone: where adventurers come to test a different kind of luck!"
+      - "Why fight monsters when you can fight the odds?"
+      - "Lady luck is fickle, but she's here tonight! Come say hello!"
+      - "Some say the best loot comes from boss fights. I say it comes from my tables!"
+      - "Another beautiful evening at the Game Zone! The energy is electric!"
+      - "Need a break from the daily grind? The Game Zone's got your cure!"
+      - "Fortune and glory await! ...Or at least some stamps. Come play!"
+      - "The Game Zone is where legends are made! Or at least where they gamble!"
+      - "Potions heal your HP, but the Game Zone heals your boredom!"
+      - "In the Game Zone, everybody starts equal. No level advantage here!"
+      - "I love my job. Where else do you get to watch adventurers sweat over cards?"
+      - "The blackjack tables are heated! Somebody's on a winning streak!"
+      - "Some people train to get stronger. Smart people come here to have fun!"
+      - "You know what they say: luck is just preparation meeting opportunity!"
+      - "Whether you win or lose, at least you had fun! ...Right? RIGHT?"
+    emote: 2
+    wait: 3

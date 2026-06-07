@@ -1,0 +1,115 @@
+DropGameBot:
+  Advertise:
+    text:
+      - "Drop Game! Medium Tier (10m) / Elite Tier (50m) - Try your luck!"
+      - "Step right up! Drop Game open - who's feeling lucky today?"
+      - "10m for Medium, 50m for Elite! Trade me to play!"
+      - "Drop Game running all day! Trade me your mesos and let's go!"
+      - "Come test your looting skills! Drop Game open - two tiers available!"
+      - "10m or 50m - pick your tier and see what you can grab! Trade me to start!"
+      - "The floor is about to be covered in loot! Who wants in?"
+      - "Drop Game!! Last player walked away with some CRAZY stuff!"
+      - "You think you're fast? Prove it! Drop Game running now!"
+      - "Looking for players with quick fingers! Drop Game, trade me!"
+      - "Drop Game! Medium or Elite tier - how brave are you feeling today?"
+      - "Bored of grinding? Try the Drop Game! Trade me to start!"
+      - "Items are loaded, prizes are ready - who's playing the Drop Game?"
+    emote: 2
+    wait: 3
+  TradeRules:
+    text:
+      - "Medium Tier: 10,000,000 mesos. Elite Tier: 50,000,000 mesos."
+      - "2 minutes on the clock. Loot as many drops as you can!"
+    emote: 5
+    wait: 2
+  TierConfirmMedium:
+    text:
+      - "Medium Tier locked in! Get ready..."
+      - "Medium Tier it is! Solid choice!"
+      - "10m received! Medium Tier - here we go!"
+      - "Medium Tier! Good luck out there!"
+    emote: 2
+    wait: 2
+  TierConfirmElite:
+    text:
+      - "Elite Tier! Big spender! Let's see if it pays off..."
+      - "ELITE TIER! Now we're talking! This is gonna be good!"
+      - "50m on the line! Elite Tier activated - go big or go home!"
+      - "Elite Tier! Bold move! The prizes match the stakes!"
+    emote: 12
+    wait: 2
+  InvalidMeso:
+    text:
+      - "That's not the right amount. 10m for Medium, 50m for Elite. Try again!"
+      - "Hmm, that's not quite right. 10m or 50m - pick a tier!"
+      - "Wrong amount! Medium is 10m, Elite is 50m. Try again!"
+    emote: 6
+    wait: 2
+  PartyInvite:
+    text:
+      - "Joining you up - accept the party invite!"
+      - "Party invite sent! Accept it and we'll get started!"
+      - "Accept the party invite and let the games begin!"
+    emote: 2
+    wait: 2
+  PartyTimeout:
+    text:
+      - "You didn't accept the party invite. Maybe next time!"
+      - "No party accept... game cancelled. Come back when you're ready!"
+      - "Timed out! No worries, trade me again when you want to play!"
+    emote: 4
+    wait: 2
+  PreGame:
+    text:
+      - "Buffing up... here we go!"
+      - "Getting ready... items incoming!"
+      - "Preparing the drops... get those fingers ready!"
+      - "Loading up the loot... almost time!"
+    emote: 5
+    wait: 1
+  GameStart:
+    text:
+      - "GO GO GO! 2 minutes on the clock!"
+      - "GAME ON! Loot everything you can! 2 minutes!"
+      - "HERE WE GO! The clock is ticking - GRAB EVERYTHING!"
+    emote: 12
+    wait: 1
+  GameEnd:
+    text:
+      - "Time's up! Game over! Hope you got something good."
+      - "And that's a wrap! How'd you do?"
+      - "GG! Come back anytime for another round!"
+      - "That's a wrap! Not bad, not bad at all!"
+      - "Time! Pencils down, hands off the keyboard! Just kidding, GG!"
+      - "Game over! Did you get what you were hoping for?"
+      - "And we're done! Hope your inventory is a little fuller now!"
+      - "Ding ding ding! Round over! How'd you do?"
+      - "That was intense! Come back when you want another shot!"
+    emote: 2
+    wait: 2
+  PlayerDisconnect:
+    text:
+      - "Player left... game cancelled."
+      - "Player disconnected. Game's over. Better luck next time!"
+      - "Looks like they had to leave. Game cancelled!"
+    emote: 4
+    wait: 2
+  Flavor:
+    text:
+      - "Who wants to play the drop game?"
+      - "Feeling lucky? Trade me!"
+      - "Big prizes waiting for a brave soul!"
+      - "Last round someone walked away with a fortune..."
+      - "Drop game! Drop game! Get your drops here!"
+      - "The drop game is the best way to spend your mesos! Change my mind!"
+      - "I've got scrolls, equips, and surprises loaded up! Who wants to play?"
+      - "Fast hands win big prizes! Drop Game is open!"
+      - "You miss 100% of the drops you don't loot! Come play!"
+      - "Medium tier for the cautious, Elite tier for the bold! Your choice!"
+      - "Another round, another chance at glory! Drop Game right here!"
+      - "The loot pool is stacked today! Come get some!"
+      - "Grinding is for the patient. Drop Game is for the brave!"
+      - "Some people farm for hours. Smart people play the Drop Game!"
+      - "Step right up! Your next big drop is waiting!"
+    emote: 2
+    wait: 3
