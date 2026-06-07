@@ -4,14 +4,14 @@
 worlds:
     #Properties for Scania 0
   - flag: 0
-    server_message: Welcome to Scania!
+    server_message: ""
     event_message: Scania!
     why_am_i_recommended: Welcome to Scania!
     channels: 3
-    exp_rate: 10
-    meso_rate: 10
-    drop_rate: 10
-    boss_drop_rate: 10                      #NOTE: Boss drop rate OVERRIDES common drop rate, for bosses-only.
+    exp_rate: 2
+    meso_rate: 2
+    drop_rate: 2
+    boss_drop_rate: 5                      #NOTE: Boss drop rate OVERRIDES common drop rate, for bosses-only.
     quest_rate: 5                           #Multiplier for Exp & Meso gains when completing a quest. Only available when USE_QUEST_RATE is true. Stacks with server Exp & Meso rates.
     fishing_rate: 10                        #Multiplier for success likelihood on meso thrown during fishing.
     travel_rate: 10                         #Means of transportation rides/departs using 1/N of the default time.
@@ -162,14 +162,14 @@ server:
     DB_URL_FORMAT: "jdbc:mysql://%s:3306/cosmic" # If the docker ENV for DB_HOST is anything but "db", this string format should be changed from 3306 to 3307 (or whichever port it was changed to in docker) 
     DB_HOST: "localhost" 
     DB_USER: "root"
-    DB_PASS: ""
+    DB_PASS: "Solomapling123"
     INIT_CONNECTION_POOL_TIMEOUT: 90    # Seconds
 
     #Login Configuration
     WORLDS: 1                           #Initial number of worlds on the server.
     WLDLIST_SIZE: 21                    #Max possible worlds on the server.
     CHANNEL_SIZE: 20                    #Max possible channels per world (which is 20, based on the channel list on login phase).
-    CHANNEL_LOAD: 100                   #Max players per channel (limit actually used to calculate the World server capacity).
+    CHANNEL_LOAD: 2000                   #Max players per channel (limit actually used to calculate the World server capacity).
     CHANNEL_LOCKS: 20                   #Total number of structure management locks each channel has.
 
     RESPAWN_INTERVAL: 10000             #10 seconds, 10000.
@@ -178,8 +178,8 @@ server:
     COUPON_INTERVAL: 3600000            #60 minutes, 3600000.
     UPDATE_INTERVAL: 777                #Dictates the frequency on which the "centralized server time" is updated.
 
-    ENABLE_PIC: true               #Pick true/false to enable or disable Pic. Delete character requires PIC available.
-    ENABLE_PIN: true               #Pick true/false to enable or disable Pin.
+    ENABLE_PIC: false               #Pick true/false to enable or disable Pic. Delete character requires PIC available.
+    ENABLE_PIN: false               #Pick true/false to enable or disable Pin.
 
     BYPASS_PIC_EXPIRATION: 20           #Enables PIC bypass, which will remain active for that account by that client machine for N minutes. Set 0 to disable.
     BYPASS_PIN_EXPIRATION: 15           #Enables PIN bypass, which will remain active for that account by that client machine for N minutes. Set 0 to disable.
@@ -219,7 +219,7 @@ server:
     USE_MAXRANGE_ECHO_OF_HERO: true
     USE_MTS: false
     USE_CPQ: true                       #Renders the CPQ available or not.
-    USE_AUTOHIDE_GM: true              #When enabled, GMs are automatically hidden when joining. Thanks to Steven Deblois (steven1152).
+    USE_AUTOHIDE_GM: false              #When enabled, GMs are automatically hidden when joining. Thanks to Steven Deblois (steven1152).
     USE_FIXED_RATIO_HPMP_UPDATE: false   #Enables the HeavenMS-builtin HPMP update based on the current pool to max pool ratio.
     USE_FAMILY_SYSTEM: true
     USE_DUEY: true
@@ -250,7 +250,7 @@ server:
     USE_ENFORCE_MDOOR_POSITION: false   #Forces mystic door to be spawned near spawnpoints.
     USE_SPAWN_CLEAN_MDOOR: false         #Makes mystic doors to be spawned without deploy animation. This clears disconnecting issues that may happen when trying to cancel doors a couple seconds after deployment.
     USE_SPAWN_RELEVANT_LOOT: true       #Forces to only spawn loots that are collectable by the player or any of their party members.
-    USE_ERASE_PERMIT_ON_OPENSHOP: true  #Forces "shop permit" item to be consumed when player deploy his/her player shop.
+    USE_ERASE_PERMIT_ON_OPENSHOP: false  #Forces "shop permit" item to be consumed when player deploy his/her player shop.
     USE_ERASE_UNTRADEABLE_DROP: true    #Forces flagged untradeable items to disappear when dropped.
     USE_ERASE_PET_ON_EXPIRATION: false  #Forces pets to be removed from inventory when expire time comes, rather than converting it to a doll.
     USE_BUFF_MOST_SIGNIFICANT: true     #When applying buffs, the player will stick with the highest stat boost among the listed, rather than overwriting stats.
@@ -269,7 +269,7 @@ server:
     USE_ENABLE_RECALL_EVENT: false        #Enables a disconnected player to reaccess the last event instance they were in before logging out. Recall only works if the event isn't cleared or disposed yet. Suggestion thanks to Alisson (Goukken).
 
     #Announcement Configuration
-    USE_ANNOUNCE_SHOPITEMSOLD: false    #Automatic message sent to owner when an item from the Player Shop or Hired Merchant is sold.
+    USE_ANNOUNCE_SHOPITEMSOLD: true    #Automatic message sent to owner when an item from the Player Shop or Hired Merchant is sold.
     USE_ANNOUNCE_CHANGEJOB: false       #Automatic message sent to acquantainces when changing jobs.
     USE_ANNOUNCE_NX_COUPON_LOOT: false    #Enables or disables the floating text when a player loots a NX card
 
@@ -282,6 +282,10 @@ server:
     #Maker Configuration
     USE_MAKER_PERMISSIVE_ATKUP: false    #Allows players to use attack-based strengthening gems on non-weapon items.
     USE_MAKER_FEE_HEURISTICS: true      #Apply compiled values for stimulants and reagents into the Maker fee calculations (max error revolves around 50k mesos). Set false to use basic constant values instead (results are never higher than requested by the client-side).
+
+    #Custom Configuration
+    USE_ENABLE_CUSTOM_NPC_SCRIPT: false  #Enables usage of custom HeavenMS NPC scripts (Agent E, Coco, etc). Will not disable Abdula (it's actually useful for the gameplay) or quests.
+    USE_STARTER_MERGE: false            #Allows any players to use the Equipment Merge custom mechanic (as opposed to the high-level, Maker lv3 requisites).
 
     #Commands Configuration
     BLOCK_GENERATE_CASH_ITEM: false     #Prevents creation of cash items with the item/drop command.
