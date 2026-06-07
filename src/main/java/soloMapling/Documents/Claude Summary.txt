@@ -1,0 +1,331 @@
+  ---
+  SoloMapling — Architecture Overview (updated May 2026)
+
+  What It Is
+
+  A custom-built artificial player simulation framework layered on top of a MapleStory v83 private server (Cosmic). It
+  spawns hundreds of autonomous bot characters driven by server-side logic, populating the game world as if real players
+  were present. Beyond population simulation, it includes interactive game systems (blackjack, drop games, party quests),
+  social simulation (ambient chat, multi-bot conversations, jump quest attempts), a full tutorial onboarding flow with
+  admin grant and item gifting, and a tiered economy spanning four Free Market regions.
+
+  ---
+  Core Architecture
+
+  Bot State Machine (BotSM)
+  The foundation of everything. An abstract state machine with states: IDLE -> RUNNING -> PAUSE -> TRADING -> FINISHED.
+  Each bot runs on a scheduled executor thread that fires every 2-6 seconds (randomized jitter). When real players are
+  present, the scheduler speeds up; when alone, it slows down to conserve resources. All specialized bot types extend
+  this class and override the update logic.
+
+  ---
+  Major Subsystems
+
+  1. Bot Types & Factory (BotTypeManager, BotTypes/)
+  Fifteen concrete bot personalities, each with distinct state machines and behavioral loops. A factory pattern
+  instantiates them by type enum:
+
+     Core Population Bots:
+     - FMBot — Free Market wanderer, shops, trades
+     - HenesysBot — Henesys town population (wander across 4 maps, emote, chat, map-change via portals)
+     - HenesysJQBot — Pet Park jump quest bot (tier-weighted movement recordings, difficulty progression)
+       HenesysBot <-> HenesysJQBot convert back and forth: HenesysBot can roll to become JQBot when in Pet Park,
+       JQBot converts back to HenesysBot after reaching the top or deciding to leave.
+     - SocialBot — Interactive social NPC (SINGLE_RESPONSE or INTERACTIVE variants, anti-spam tracker,
+       multi-turn dialogue trees with cooldown escalation: NORMAL -> REDUCED -> NONVERBAL -> IGNORE)
+     - ScrollingBot — Uses scrolls on items, reacts to success/failure via EventBus
+     - GachaBot — Operates Gachapon machines with reactor-based VFX prize sprays
+     - DiceBot — Dice-rolling social bot
+     - TutorialBot — Full new-player onboarding (18-state FSM): asks if player wants admin role, grants
+       GM level 6 + Night Lord job + gear + NX code, trades starter items (1B mesos, consumables,
+       equips), teaches chat/response mechanics, upgrades player's weapon, escorts to exit portal
+
+     Merchant Bots (specialized from original single MerchantBot):
+     - SellingMerchantBot — Runs Hired Merchants selling items
+     - BuyingMerchantBot — Seeks items to purchase from players
+     - NXMerchantBot — Specializes in Cash Shop item trading
+
+     Interactive Game Bots:
+     - GameZoneHostBot — Hosts game events in the Henesys Game Zone
+     - BlackjackDealerBot — Runs a full blackjack table with AI strategy
+     - DropGameBot — Hosts drop-item racing minigame (8-state FSM: advertise -> trade entry fee ->
+       validate tier -> party up -> buff -> active drop phase -> end. Tier-based loot pools,
+       movement recording playback, despawn timing, forfeit handling)
+
+     Party Quest Bots:
+     - OPQBot — Orbis Party Quest participants, orchestrated multi-phase PQ simulation
+
+  2. Bot Decoration & Tier System (BotDecoratorSystem/)
+  Procedurally generates each bot's appearance, level, and equipment based on a weighted tier assignment (S/A/B/C/D).
+  S-tier bots are elite with high-level gear; D-tier bots are scrubs. Three decoration layers:
+     - BotDecorateBody — face, hair, skin color
+     - BotDecorateEquips — weapons, armor, accessories based on job path + tier
+     - BotDecorateNX — Cash Shop overlay items with a multi-stage decision tree:
+       * 20% base chance gate (only 1 in 5 bots get NX cosmetics at all)
+       * Tier-based intensity: S-tier rolls 2-5 NX items, D-tier gets 1
+       * Weighted slot draw without replacement (weapons/caps/clothing highest weight)
+       * Special rules: 40% weapon opt-out, 75/25 overall vs top+bottom split for clothing
+       * Separate 2-5% ring layer (tier-dependent, not counted in intensity)
+  Supporting logic: EquipDecoratorRules, JobPathLogic, CosmeticTier, GenericEquipPool.yaml, NXItemPool.yaml.
+  BotDecorationQueue manages asynchronous decoration application with MMC toggle control.
+
+  3. Movement & Navigation (BotMovementSystem/)
+  Possibly the most technically impressive piece. Three movement modes:
+
+     a) Replay-based: Pre-recorded movement packets (position, stance, velocity, timing) stored in .bin/.csv files
+        organized by map ID. 413 binary recordings + 412 CSV recordings across 20+ maps. Used for JQ attempts,
+        drop game bot paths, tutorial bot returns, and general bot movement patterns.
+
+     b) Pathfinding: JGraphT directed graph models map topology. Three pathfinder variants:
+        - pathFinderBeta — standard ground-level Dijkstra pathfinding
+        - pathFinderAware — context-aware pathfinding (considers obstacles/state)
+        - pathFinderAerial / pathFinderBetaAerial — elevated terrain navigation (ropes, ladders, platforms)
+
+     c) Portal Navigation: NavigationSystem/ sub-module handles cross-map traversal via portals. MapGraph + PathFinder
+        compute routes; Connector/PortalConnection model the portal topology. HenesysBot uses PortalConnection for
+        bidirectional map changes across Henesys Main/Market/Park/Pet Park. FM has dedicated FMMovementCommands.
+
+  Additional capabilities:
+     - Movement interrupt system — halt mid-movement pathfinding at any point
+     - botFaceTowardsPoint — orient bot toward a target
+     - moveToPortal / moveToPortalAndEnter — portal-targeted navigation
+     - Movement recording: InPacketReader captures live player movement for replay authoring
+
+  4. Trade System (BotTradeSystem/)
+  A dedicated sub-state machine (BotTradeSM) with 9 states handles the full trade lifecycle — from accepting the
+  request, evaluating offers, counter-offering, confirming, to post-trade cleanup. Each bot has a BotTradeInventory
+  (what it sells) and BotTradeWants (what it's buying), with economic decision logic to evaluate fair pricing.
+  TutorialBot and DropGameBot use direct BotTradeCommands for custom trade flows outside the standard FSM.
+
+  5. Free Market Simulation (FreeMarket/)
+  Simulates a living economy. Bots run HiredMerchant and PlayerShop instances across Henesys, Ludibrium, Perion, and
+  Elnath FM rooms. An FMEconomyManager applies regional multipliers, entrance spot premiums, day-of-week adjustments,
+  and random price variance. Shop inventories are procedurally generated by type (scroll shop, potion shop, equip shop,
+  etc.). Shop names and descriptions drawn from themed text pools.
+
+  6. Item Pool (itemPool/)
+  A YAML-driven item registry supporting version-aware selection, tier-based pricing, scroll metadata (success rates,
+  stat bonuses), upgrade simulation, and weighted probability item selection. Powers the FM, trade, gacha, and drop
+  game systems. Includes:
+     - Per-class item configs (warrior, mage, thief, bowman)
+     - Category configs (scrolls, dark scrolls, useables, etc, chairs, mastery books)
+     - ScrollInfoManager — scroll success rates and stat bonus tables
+     - ScrolledItemComparator — evaluates scrolled items vs clean items
+     - GachaFillerSystem — generates gacha prize filler lists for VFX prize sprays
+     - ItemQuantityConfig — controls stack sizes and drop quantities
+     - UniqueStatBonusList — special stat bonuses for rare items
+     - EquipMetadataCache — caches equipment metadata for fast lookup
+
+  7. Chat & Messaging (BotMessagingSystem/)
+  An async pub/sub message broker with three independent queues (PRIMARY/SECONDARY/TERTIARY). CharacterStorage acts as a
+  global bot registry — tracking active bots, players in dialogue, players inquiring about trades, and hidden bots.
+  Includes QueueMonitor for debugging and QueueCleaner for maintenance. Dispatcher routes messages to appropriate
+  handlers.
+
+  8. Event Bus (EventMessageSystem/)
+  A decoupled event-driven layer. Bots subscribe to game events (LEVEL_UP, TRADING, MAP_ENTERED, SKILL_CAST, etc.)
+  filtered by world/channel/map. Components:
+     - EventBus — singleton pub/sub dispatcher
+     - EventFactory — creates typed events (LevelUp, Scroll, ChatMegaphone, etc.)
+     - EventStore — persists ~5,000 events in historical log
+     - EventSubscriber — subscription interface for bots
+     - BotEventBuffer — per-bot event queue for async processing
+     - EventType enum — all event categories
+     - EventMonitorTest — testing utilities
+
+  9. Dialogue System (BotDialogueHandler, BotCommandsPack/)
+  YAML-driven dialogue with randomized line selection, emote IDs, timing, and variable substitution (%RESP_NAME,
+  %CHR_NAME, %WPN_NAME, %NX_CODE). Fourteen per-bot-type dialogue files:
+     - BlackjackDealerBotDialogue.yaml, ConversationDialogue.yaml, DropGameBotDialogue.yaml
+     - DropGameLootPool.yaml, FMBotDialogue.yaml, GameZoneHostBotDialogue.yaml
+     - HenesysBotDialogue.yaml, JQBotDialogue.yaml, MegaphoneDialogue.yaml
+     - MerchantBotDialogue.yaml, ScrollingBotDialogue.yaml, SocialBotDialogue.yaml
+     - SocialHotPotatoDialogue.yaml, TutorialBotDialogue.yaml
+
+  Seven command packs:
+     - SocialCommands — chat, chat bubbles, chat hints, emotes, displayPlayerChatCommands
+     - MegaphoneCommands — super mega, avatar mega, MapleTV
+     - DropCommands — loot, throw meso/items/equips (to owner, to location, wide, targeted)
+     - WarpCommands — map warping, portal entering, drop-down portals
+     - VFXCommands — visual effects triggering
+     - MapleMessengerCommands — messenger invite, typing status, chat
+     - BotAttack — melee swing animations (used for reactor hitting in OPQ)
+
+  10. Environment Manager (Environment/)
+  Handles multi-phase world initialization via a 7-wave phased startup with 1-second delays between waves:
+
+     Wave 1 — Essentials: Casino NPCs, Tutorial Bot (Maple Island), Henesys wanderers (10), Henesys FM region,
+              first FM entrance batch
+     Wave 2 — FM Buildout: Ludi FM, second FM entrance batch, first merchant bot batch (selling/buying/NX
+              across rooms m1/m2/m5), Gacha bots (3)
+     Wave 3 — Henesys Population: More wanderers (10/10/0/5 social), Henesys filler bots,
+              START SocialHotPotatoManager and ConversationManager
+     Wave 4 — Expand FM: Perion + Elnath FM, third FM entrance batch, second merchant batch,
+              Henesys Market fillers
+     Wave 5 — Sub-areas: More wanderers (10/10/10/4), Park/Potion Shop/Game Zone fillers,
+              Game Zone host bots (2)
+     Wave 6 — Specialty: Blackjack tables (5), Drop Game Bot, JQ bots (15 in Pet Park),
+              Pet Park social bots (14), scroll bot conversions
+     Wave 7 — Late Arrivals: OPQ lobby bots, final merchant batch, BotDecorationQueue.start()
+
+  Platform system ensures bots spawn on valid footholds and don't cluster:
+     - Platform.java — foothold/platform data structure with boundary coordinates
+     - PlatformParser.java — reads platform definitions from map data
+     - PlatformSpawner.java — places bots on valid footholds
+     - EnvironmentManager — orchestrates spawn phases, platform queries, NPC spawning
+
+  11. Social Simulation Systems [NEW]
+
+     SocialHotPotatoManager — Ambient social activity generator for filler bots across 4 Henesys maps.
+     Runs every 8-20 seconds (randomized). Selects random available filler bots and performs weighted actions:
+        * 40% Chat (categories: RealLife, MapleInUniverse, SocialSim, AFK, Nostalgia, etc.)
+        * 15% Emote (random 1-22)
+        * 13% Position change (sit/unsit chair, turn around, nudge)
+        * 10% Emote + Chat combo
+        * 5% Chalkboard (5-minute duration)
+        * 17% Megaphone (Super or Avatar variant, 75/25 split)
+     Includes overlap detection (40px X, 30px Y) with nudge-apart behavior.
+     Filters bots that are available (not in conversation, not busy).
+
+     ConversationManager — Multi-bot conversation orchestrator. Runs every 60-120 seconds.
+     Scans Henesys maps for spatial clusters of 2-4 bots within 250px X, 30px Y proximity.
+     Selects a cluster, assigns participants to roles (A/B/C/D), plays scripted conversation
+     lines with 6-9 second delays, optional emotes, face-toward-center orientation.
+     Loads scripts from ConversationDialogue.yaml. Maintains 20-line recent history to avoid
+     script repetition. Marks bots as in-conversation to block other ambient actions.
+
+     These two systems work together: SocialHotPotatoManager checks ConversationManager before
+     selecting a bot to ensure it isn't mid-conversation.
+
+  12. Visual Effects (MapVFX/CustomReactor)
+  Reactor-based VFX for animations like Gachapon roulette — spawning reactors, triggering hit reactions, and creating
+  item spray patterns (fountain, line, Gaussian scatter) with staggered timing. Also used by OPQ for cloud reactors.
+
+  13. Bot Party System (BotPartySystem/)
+  Full party lifecycle management for bots:
+     - BotPartyCommands — create party, invite player, accept/reject invites, leave party
+     - BotPartyLogic — decision-making for party interactions
+     - BotPartyQueue — tracks pending party invites with timeout expiry
+  Essential infrastructure for OPQ (bots must party up) and DropGameBot (party for loot sharing).
+
+  14. Blackjack System (BotTypes/Blackjack/)
+  Complete card game implementation hosted by BlackjackDealerBot:
+     - BlackjackTable — manages game state, seating, turn order
+     - Deck — standard 52-card deck with shuffle
+     - BlackjackRules — hit/stand/bust/blackjack logic, hand evaluation
+     - BlackjackAI — bot decision-making (basic strategy)
+     - BlackjackPlayer — player state (hand, bet, status)
+     - CardVisuals — in-game card representation via item drops or chat
+  Players (both real and bot) join a table hosted by a GameZoneHostBot/BlackjackDealerBot.
+
+  15. Drop Game System (DropGameBot, DropGameLootPool)
+  Interactive minigame with a full 8-state FSM:
+     RESET -> IDLE_ADVERTISE -> TRADE_WAIT -> TRADE_VALIDATE -> PARTY_SETUP ->
+     PARTY_WAIT -> PRE_GAME -> ACTIVE_GAME -> END_GAME
+
+     Entry: Player trades meso entry fee (10M = medium tier, 50M = elite tier)
+     Pre-game: Bot casts Haste buff on both participants
+     Active: 120-second phase — bot plays movement recording while dropping items every 500-2000ms
+     Loot: Tier-specific loot pool from DropGameLootPool.yaml (33% special, 67% regular)
+     Cleanup: Party disbanded, drop scheduler stopped
+  Uses custom trade flow (not standard BotTradeSM), BotPartyCommands, and movement recording playback.
+
+  16. OPQ Rush System (BotTypes/OPQ/)
+  Multi-phase Orbis Party Quest simulation. The most complex bot orchestration in the project:
+     - OPQOrchestrator (singleton) — manages PQ lifecycle, phase transitions, bot registration
+     - OPQSharedContext — shared state: current phase, cloud/platform assignments, task completion tracking
+     - OPQBot — individual bot FSM with states (uses setStateForDebug for dev testing)
+     - OPQConstants — map IDs (lobby, stage 1, tower, stage 2, exit), timing, hit counts
+     - OPQRecruitMessages — recruitment dialogue/megaphone messages
+
+  Phase flow: INACTIVE -> RECRUITMENT -> IN_PARTY_IDLE -> STAGE_1 -> STAGE_2 -> EXIT
+     - Stage 1: Bots navigate to cloud reactors, attack them (BotAttack + aerial pathfinding)
+     - Stage 2: Bots navigate to platform "boxes", complete tasks
+     - Orchestrator tracks per-bot task completion and advances phases when all bots report done
+
+  17. Casino System (Casino/)
+  Casino infrastructure for chip-based gambling:
+     - CasinoChipConfig — chip denominations, NPC IDs, exchange rates
+     - WzXmlPatcher — patches WZ XML data for casino NPC setup
+  NPCs spawned via EnvironmentManager on dedicated casino maps.
+
+  18. Server-Side Utilities (server/)
+     - ExecutorServiceManager — centralized thread-pool management (bots get schedulers here)
+     - MethodScheduler — delayed/repeated task scheduling (used by JQBot mid-chat, DropGameBot drops)
+     - MapleMessengerConsole (MMC) — in-game operator console for environment commands
+     - SoloMaplingConstants — global constants
+     - SoloMaplingUtilities — type checking, random helpers, sleep utilities, rollChance
+     - NXCodeManager — NX cash code generation (XXXXX-XXXXX-XXXXX format, DB persistence)
+     - NpcSpawner — dynamic NPC spawning at arbitrary positions
+     - MapleVersionManager — NPC/portal version management (npc_versions.yaml, portal_versions.yaml)
+
+  ---
+  GM Dev Commands (in-game, level 4)
+
+  Nine command suites registered in CommandsExecutor.java. All have a `help` subcommand that lists their options
+  in-game via yellowMessage. Full reference: docs/Dev Commands Cheat Sheet.md
+
+     !bot       — Bot lifecycle, type assignment, loot, appearance, party, chat, megaphones
+     !move      — Bot movement, pathfinding, recording/playback, chairs, interrupts
+     !betafmshop — Free Market population and shop management
+     !env       — World init, filler bots, NPC spawning, platform inspection, social systems
+     !fmbot     — FM-bot-specific commands (mostly stubs)
+     !tradebot  — Trade sub-FSM driving and inspection
+     !test      — Reactors, VFX, events, gacha, messenger
+     !opq       — OPQ orchestration and lifecycle
+     !reactor   — Reactor inspection and bot-attack testing
+
+  ---
+  Key Design Patterns Used
+
+  +---------------------+-----------------------------------------------------------+
+  |      Pattern        |                         Where                             |
+  +---------------------+-----------------------------------------------------------+
+  | State Machine       | BotSM, BotTradeSM, OPQBot, BlackjackTable, TutorialBot,   |
+  |                     | DropGameBot, HenesysJQBot, SocialBot, per-bot FSMs        |
+  +---------------------+-----------------------------------------------------------+
+  | Factory             | BotTypeManager (enum-based factory)                       |
+  +---------------------+-----------------------------------------------------------+
+  | Observer/Pub-Sub    | EventBus, MessageQueue, BotPartyQueue                     |
+  +---------------------+-----------------------------------------------------------+
+  | Adapter             | ShopKeeper -> HiredMerchantAdapter / PlayerShopAdapter     |
+  +---------------------+-----------------------------------------------------------+
+  | Strategy            | Bot types override updateState(); BlackjackAI strategies   |
+  +---------------------+-----------------------------------------------------------+
+  | Decorator           | BotDecorate wraps characters with appearance/stats/NX      |
+  +---------------------+-----------------------------------------------------------+
+  | Producer-Consumer   | MessageQueue with blocking queues, BotDecorationQueue      |
+  +---------------------+-----------------------------------------------------------+
+  | Singleton           | CharacterStorage, EventBus, MessageQueue, OPQOrchestrator, |
+  |                     | SocialHotPotatoManager, ConversationManager                |
+  +---------------------+-----------------------------------------------------------+
+  | Orchestrator        | OPQOrchestrator (PQ phases), ConversationManager (multi-   |
+  |                     | bot dialogue), EnvironmentManager (7-wave world startup)   |
+  +---------------------+-----------------------------------------------------------+
+  | Command             | BotCommandsPack (7 packs), GM4 command dispatch (9 suites) |
+  +---------------------+-----------------------------------------------------------+
+
+  ---
+  Concurrency Model
+
+  Each bot runs on a ScheduledExecutorService with randomized intervals. An ExecutorServiceManager centralizes thread
+  pool management. The environment setup runs in 7 phases with inter-phase delays. Thread safety is handled via
+  ConcurrentHashMap in shared registries. OPQ adds orchestrator-level coordination where the singleton manages phase
+  transitions and task completion tracking across all registered bots. SocialHotPotatoManager and ConversationManager
+  each run their own scheduled loops (8-20s and 60-120s respectively) and coordinate via synchronized state checks
+  to prevent conflicting bot commands.
+
+  ---
+  File Composition (approximate)
+
+  - Java source files: ~162 (under soloMapling/)
+  - Movement recording data: 825+ files (413 .bin + 412 .csv across 20+ map directories)
+  - YAML configuration: ~31 files (14 dialogue, 13 item configs, 2 version configs, 2 pool configs)
+  - Text data: ~12 files (FM shop names/descriptions)
+  - Documentation: ~27 files (design notes, summaries, architecture docs, technical notes)
+
+  ---
+  It's a genuinely sophisticated piece of software — the layering of movement replay, graph-based navigation, tiered
+  economy simulation, interactive game hosting, orchestrated party quests, ambient social simulation, multi-bot
+  conversations, and per-bot state machines creates something that authentically mimics a living MMO population from
+  the server's perspective, while providing interactive content that blurs the line between bot and player.

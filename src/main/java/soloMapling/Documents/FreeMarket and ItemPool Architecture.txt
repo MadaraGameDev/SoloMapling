@@ -1,0 +1,458 @@
+Free Market & Item Pool Architecture
+=====================================
+Last Updated: 2026-05-25
+Covers: soloMapling/FreeMarket/ (21 files) + soloMapling/itemPool/ (16 files, 13 YAMLs)
+
+
+TABLE OF CONTENTS
+-----------------
+1. System Overview
+2. Shop Generation Pipeline (end-to-end)
+3. Tier System & Version Layering
+4. Economy & Pricing Engine
+5. Shop Type Selection
+6. Item Pool & Selection
+7. Scroll & Upgrade System
+8. Shop Description System
+9. Shop Offer System (Haggling)
+10. FM Layout & Spawning
+11. Bot-Operated Shops (PlayerShop path)
+12. Known Issues & TODOs
+
+
+=====================================
+1. SYSTEM OVERVIEW
+=====================================
+
+The Free Market simulation procedurally generates ~105 shops across 22 FM rooms
+in 4 regions (Henesys, Ludi, Perion, Elnath). Each shop is assigned a tier (S/A/B),
+a primary type (class-focused or item-focused), secondary items, a procedural
+description, and pricing influenced by room location, day-of-week, and market index.
+
+Two shop forms exist:
+  - HiredMerchant (mushroom store) ~40% of spawns
+  - PlayerShop (bot sitting with store permit) ~60% of spawns
+
+Both use the same generation pipeline (ArtificialShopGenerator) to fill their inventory.
+
+Key entry point: ArtificialFreeMarket.java
+Key data model: HiredMerchantArtificial.java (extends HiredMerchant, adds tier/type metadata)
+Called from: EnvironmentManager.environmentLoadStartup() in waves 1/2/4/5
+
+
+=====================================
+2. SHOP GENERATION PIPELINE (end-to-end)
+=====================================
+
+ArtificialFreeMarket.populateFreeMarketRegion(region)
+  |
+  +-- For each mapId in region (parallel via ExecutorServiceManager):
+      |
+      populateFreeMarketRoom(mapId)
+        |
+        +-- For each spawn Point in the room's coordinate list:
+            |
+            +-- 2% chance: skip spot entirely (empty spot simulation)
+            |
+            +-- 40% chance: spawnHiredMerchantStore(mapId, position)
+            |   60% chance: createBotShopAtLocation(position, mapId)
+                            (spawns a bot Character, then calls BotPlayerStorePermit)
+
+Both paths converge on:
+
+  generateHiredMerchantShopData(character, ownerName, ownerId, description, shopItemId, mapId)
+    |
+    1. createMerchantObject()          -- instantiates HiredMerchantArtificial
+    2. getTierForRoom(mapId)           -- weighted random S/A/B based on room (FMEconomyManager)
+    3. selectShopTypeWeightedProbability()  -- picks primary shop type (FMShopTypeManager)
+    4. generatePrimaryShop(type, merchant)  -- fills main inventory
+    |   +-- Class shops (Warrior/Mage/Bowman/Thief/Common):
+    |   |     generateShop(merchant, Job)
+    |   |       -> generateEquipListByClassType(jobType, tier)
+    |   |           -> generateEquipList(yamlFile, equipCategories, tier)  [EquipListGenerator]
+    |   |               -> generatePattern(tier) -> selectEquipCategoriesByPattern()
+    |   |               -> For each category: getRandomItemFull() -> pick item -> scroll -> price
+    |   |
+    |   +-- Item shops (Scroll/DarkScroll/Potion/ETC/Mastery/Chair):
+    |         repeatAction(N, () -> generateSecondaryShop(merchant, type))
+    |           -> SECONDARY_SHOP_GENERATORS map dispatches to:
+    |              generateScrollsList / generatePotionsList / generateETCList /
+    |              generateMasteryBookList / generateChairList
+    |
+    5. generateSecondaryShopItems()    -- adds 1-2 bonus item types (Potion/Scroll/ETC/etc)
+    6. generateTertiaryBackupShop()    -- if shop has <5 items, adds another primary type
+    7. FMShopDescriptionManager.generateDescription()  -- procedural shop title
+    8. applyAdditionalShopMods()       -- hot room quantity boost (rooms 1,2,7)
+    9. buyoutSomeItems()               -- 9% per item marked as sold out
+    10. applySpecialShopType()         -- rare effects: 1-meso / quitting sale / cheap
+    11. appendRoomNumber()             -- appends "<N>" room tag to description
+
+
+=====================================
+3. TIER SYSTEM & VERSION LAYERING
+=====================================
+
+TIER ASSIGNMENT (FMEconomyManager.getTierForRoom):
+  Rooms 1-3, 7 (hot rooms):  60% S, 35% A, 5% B
+  Rooms 4-6, 8-12 (mid):     25% S, 60% A, 15% B
+  Room 13 (balanced):         33% S, 33% A, 34% B
+  Rooms 14-17 (budget):       15% S, 30% A, 55% B
+  Rooms 18-22 (random):       20% S, 40% A, 40% B
+
+TIER DISTRIBUTION (QuantitySelector.distributedTierSelector):
+  When selecting individual items, the shop's tier is "fuzzed":
+  Input S -> 60% S, 38% A, 2% B
+  Input A -> 70% A, 10% S, 20% B
+  Input B -> 68% B, 30% A, 2% S
+
+  This creates variety within a shop -- an S-tier shop still mostly has S items,
+  but can have some A-tier mixed in.
+
+VERSION-BASED TIER DEGRADATION:
+  Items in YAML configs have version-keyed tiers:
+    tier: { 1: S, 19: A }  means S-tier from v1-18, degrades to A-tier at v19+
+
+  MapleVersionManager.itemPoolVersion controls which version is active.
+  ItemSelector.getRandomItem() filters items by matching tier AT the current version.
+
+  This system simulates item progression: early-game items that were once top-tier
+  become mid-tier as higher-level content is introduced at later versions.
+
+  CURRENT STATE (itemPoolVersion = 55):
+    - warrior/mage/bowman YAMLs: S-tier items only exist at v1-18. At v55, they're all A-tier.
+    - thief.yaml: Some items have late S-tier entries (tier: {41: S}, {51: S}) -- these work at v55.
+    - common.yaml: Only A-tier items at any version. No S-tier entries exist.
+    - scrolls.yaml: Mostly A/B tier.
+    - darkscrolls.yaml: Has S-tier entries at v40 and v51 -- these work at v55.
+    - chair.yaml: Has rolling S-tier windows (v23-48, v49-71, v72+) -- v55 has S-tier chairs.
+    - etc.yaml: Has some S-tier entries at v1 and v23 -- work at v55.
+
+  NET EFFECT: Class equipment shops (53%+ of all shops) requesting S-tier items at v55
+  get NULL results for most equip categories. Items silently skip, resulting in thin shops
+  with no S-quality equipment despite being assigned S-tier status.
+
+
+=====================================
+4. ECONOMY & PRICING ENGINE
+=====================================
+
+File: FMEconomyManager.java
+
+Pricing is applied in addItemToShop() via adjustFMPrices() and adjustFMQuantity():
+
+  priceAdjustmentRules(price, mapId, position):
+    1. calcPriceBasedOnMarket()     -- sine-wave market index (0.85x - 1.15x), 2hr cycles
+    2. calcPriceBasedOnDay()        -- Fri/Sat/Sun: +10%, Mon/Tue: -5%
+    3. randomizePriceAdjustment()   -- weighted: -10%(10%), -5%(20%), 0%(40%), +5%(20%), +10%(10%)
+    4. FMRoomPremiumCalculator()    -- per-room multiplier:
+         Room 1: 1.20x   Room 2: 1.14x   Room 3: 1.07x   Room 7: 1.07x
+         Rooms 14-22: 0.82x - 0.97x (decreasing)
+         Rooms 4-6, 8-13: 1.00x (no modifier)
+    5. FMRoomDoorSpotPremiumCalculator() -- +20% for door-adjacent spots in Henesys/Ludi
+    6. getPriceStylingNotation()    -- cosmetic rounding:
+         - trailing zeros (150,000)
+         - trailing nines (149,999)
+         - digit repetition (155,555)
+
+  Quantities follow same room multiplier logic via adjustFMQuantity().
+
+  Base prices come from:
+    - YAML price maps for YAML-sourced items: item.getCurrentPrice()
+    - WZ data for IIPU-sourced items: multiplyWzPriceByJobStyle(getWzPrice(id), jobStyle)
+      Job multipliers (on top of 1.5x base): Warrior 1.4x, Thief 1.5x, Mage 1.35x, Bowman 1.3x
+
+  Market index: Generated once as a 12-value sine wave (24h / 2h intervals) with random noise.
+  Regenerated each server restart. Accessed via getCurrentMarketIndex().
+
+
+=====================================
+5. SHOP TYPE SELECTION
+=====================================
+
+File: FMShopTypeManager.java
+
+PRIMARY shop type (selectShopTypeWeightedProbability):
+  Warrior: 13%   Mage: 13%   Bowman: 13%   Thief: 14%
+  Common: 19%    Pirate: 1%
+  Scroll: 5%     DarkScroll: 5%
+  Potion: 5%     ETC: 5%    Chair: 3%   Mastery: 4%
+
+  Class shops (72% total) generate equipment via YAML item pools.
+  Item shops (28% total) generate consumables/scrolls/etc.
+
+SECONDARY items (getSecondaryShopItemTypes):
+  1-2 bonus item types per shop (50/50 split on count).
+  Potion: 40%   Scroll: 25%   DarkScroll: 15%   ETC: 13%   Mastery: 5%   Chair: 2%
+
+TERTIARY backup: If shop has <5 items after primary+secondary, a random class primary is added.
+
+Shop types are stored on HiredMerchantArtificial (primary/secondary/tertiary fields).
+
+
+=====================================
+6. ITEM POOL & SELECTION
+=====================================
+
+Files: ItemSelector.java, ItemDatabase.java, ItemNode.java, ScrollNode.java,
+       QuantitySelector.java, ItemQuantityConfig.java
+Configs: itemConfig/*.yaml
+
+YAML STRUCTURE (per class/category file):
+  EquipCategory:
+    - item: "Lv70"
+      variant_id: [1302012, 1312010, ...]   # all visual variants of same item
+      tier: { 1: S, 19: A }                 # version -> tier mapping
+      price: { 1: 4000000 }                 # version -> base price
+
+ITEM SELECTION FLOW (ItemSelector.getRandomItemFull):
+  1. Load YAML file and parse into ItemNode list
+  2. For each item, check if tier matches at current itemPoolVersion
+     (finds version range where item has requested tier)
+  3. Collect all matching items into filteredItems
+  4. Pick one at random (uniform distribution, no weights within tier)
+  5. Return ItemNode (or null if no items match)
+
+VARIANT SELECTION: pickRandomVariantId() chooses one ID from the item's variant_id list.
+
+QUANTITY RULES (itemQuantities.yaml):
+  Scroll S: 1      A: 1-5    B: 1-8
+  Potion S: 5-10   A: 10-15  B: 30-60
+  ETC    S: 1-3    A: 3-7    B: 5-15
+  Mastery: always 1
+
+  S-tier = rare, limited stock. B-tier = bulk, cheap.
+
+ITEM DATABASE (ItemDatabase.java):
+  Singleton that loads all YAML configs at startup and indexes by variant_id.
+  Provides O(1) lookup: getItemData(variantId), getScrollData(variantId),
+  getItemTier(variantId, version). Used by scroll/upgrade system.
+
+EQUIP METADATA CACHE (EquipMetadataCache.java):
+  One-time WZ scan that caches reqLevel, reqJob, gender, cash flag for all equips.
+  Provides fluent query API: query(EquipType).cashOnly().forGender(0).maxLevel(70).
+  Not currently used by shop generation (available for future use).
+
+
+=====================================
+7. SCROLL & UPGRADE SYSTEM
+=====================================
+
+Files: ScrollInfoManager.java, ScrollPatternGenerator.java, UpgradeSimulator.java,
+       ScrolledItemComparator.java, UniqueStatBonusList.java
+
+SCROLL APPLICATION FLOW (in EquipListGenerator.generateEquipList):
+  For each equip item:
+    1. checkIfEquipIsScrollable(equip)     -- has upgrade slots?
+    2. ScrollGivenItem(equip)              -- applies scrolls:
+       a. ScrollInfoManager.getScrollInfo(equip)  -- maps equip type -> scroll IDs
+          (derives stat type from reqJob: warrior->str, mage->int, bowman->dex, thief->luk)
+       b. ScrollPatternGenerator.getScrollPattern(slots) -- how many 10% vs 60% scrolls
+       c. Applies each scroll to equip (success/fail based on scroll's success_rate)
+    3. getEquipMarketValue(scrolledEquip)  -- prices the result:
+       a. DP algorithm computes minimum cost to reach each stat_bonus level
+       b. ScrolledItemComparator extracts actual stat improvement
+       c. Price = DP_table[actual_stat_bonus] after anomaly correction and 0.6x deduction
+
+SCROLL PATTERN (version-dependent):
+  Version 1:
+    10% scrolls: 3 passes(3%), 2(35%), 1(62%)
+    60% scrolls: 5 passes(10%), 4(30%), 3(30%), 2(20%), 1(10%)
+  Version 40+:
+    10% scrolls: 4 passes(15%), 3(25%), 2(45%), 1(15%)
+    60% scrolls: 5(10%), 4(30%), 3(30%), 2(30%)
+
+  Same pattern used for all tiers (TODO: differentiate by tier).
+
+SCROLL MAPPING (ScrollInfoManager):
+  Only ~10 EquipTypes have scroll entries. Many types default to null (no scrolling).
+  TODOs note incomplete weapon/armor scroll coverage. - ATM only thief gear is scrolled. other class weapons i dont think are scrolled
+
+PRICE SMOOTHING (UniqueStatBonusList):
+  - correctAnomalies(): fixes price inversions where higher bonus costs less
+  - applySellablesDeduction(): 0.6x multiplier to all prices (cost reduction factor)
+
+
+=====================================
+8. SHOP DESCRIPTION SYSTEM
+=====================================
+
+Files: FMShopDescriptionManager.java, FMShopDescGen.java
+Data: FreeMarket/FMNameDesc/*.txt (IGN pools, clan names, descriptions, emojis)
+
+DESCRIPTION COMPOSITION (ComboDescriptionStrategy):
+  Two pools of description entries, each filtered by tier + room:
+
+  TOP POOL (main description, always one selected):
+    FMCLAN         -- S-tier only, rooms 1,2,7. "[S]layers" style guild branding with ASCII borders
+    TOP_ITEM       -- S/A tier, all rooms. Names the most expensive non-equip item
+    TOP_EQUIPMENT  -- S/A tier, all rooms. Advertises best equip ("Godly Scarab", "12 att BWG")
+    SHOP_TYPES     -- S/A/B, all rooms. Class/category-based description from .txt files
+    RANDOM_WORD    -- S/A/B, rooms 3-22. Random short phrases
+    WELCOME        -- B-tier, rooms 13-22. "Welcome to {owner}'s Shop!"
+
+  BOTTOM POOL (suffix, 40% chance to add one):
+    OFFERABLE      -- S/A, all rooms. "L/O", "Buy or Offer"
+    RWT_CURRENCY   -- S/A, rooms 1-9. "|NX|", "|PP|WS|"
+    EMOJI          -- B, rooms 9-22. Face emojis from file
+
+  COMPATIBILITY RULES: Not all top+bottom combos are valid. Map defines which pairings work.
+  Each pairing has its own probability.
+
+  After description: appends room number tag "          <N>" with air padding.
+
+IGN GENERATION (FMShopDescGen):
+  Pool of real MapleStory IGNs loaded from randomRealMaplestoryIGNs.txt.
+  Shuffled once, dealt sequentially (no repeats until pool exhausted).
+  35% chance shop owner name reuses an existing bot character name (simulates online player's shop).
+
+
+=====================================
+9. SHOP OFFER SYSTEM (HAGGLING)
+=====================================
+
+Files: ShopOfferSystem/ (6 files)
+
+Allows real players to make price offers on bot shop items via in-shop chat.
+
+ARCHITECTURE:
+  ShopOfferSystem (singleton)
+    +-- shopModes: ConcurrentHashMap<ownerId, PRESENT|AFK>  (60% PRESENT, 40% AFK)
+    +-- activeSessions: ConcurrentHashMap<playerId, HaggleSession>
+    +-- lockedItems: Set<"ownerId_itemIndex">  (prevents duplicate sales)
+
+FLOW:
+  Player types in shop chat (e.g. "Brown Work Glove 50m")
+    -> OfferParser.parse(message, shopItems)
+       - Regex extracts price: "50m" -> 50,000,000
+       - Name matching against shop inventory
+       - Ordinal support: "1st", "2nd" for duplicate items
+       - Closest-price fallback when multiple matches
+    -> If parseable offer detected:
+
+    PRESENT mode (60%):
+      -> HaggleSession created (3 attempts max, 60s expiry)
+      -> OfferEvaluator.evaluate(offerPrice, listingPrice):
+           ratio < 0.70: DECLINE
+           0.70-0.80: 5-15% ACCEPT chance, else DECLINE
+           0.80-0.85: 25-40% ACCEPT, else COUNTER
+           0.85-0.90: 40-60% ACCEPT, else COUNTER
+           0.90-0.95: 50-70% ACCEPT, else COUNTER
+           >= 0.95: 75-100% ACCEPT
+      -> ACCEPT: updates price, locks item, removes session
+      -> COUNTER: counterPrice = (offer + listing) / 2, stored in session
+         Next offer >= counterPrice -> auto-accept
+      -> DECLINE: dialogue response
+      -> 3 failed attempts: player kicked from shop
+
+    AFK mode (40%):
+      -> If not DECLINE: schedules delayed accept (5-26 minutes)
+      -> Locks item immediately
+      -> Whispers player with updated price and room location when delay fires
+
+  Welcome system (ShopOfferWelcome):
+    60% chance to greet visitors after 15-20s delay.
+    After 2 non-offer messages, sends a hint about how to make offers.
+
+  All dialogue from ShopOfferDialogue.yaml with variable substitution
+  ({item}, {price}, {player}, {listing_price}, {counter_price}).
+
+
+=====================================
+10. FM LAYOUT & SPAWNING
+=====================================
+
+File: FMShopInfoManager.java
+
+FM ENTRANCE: mapId 910000000
+
+ROOM STRUCTURE:
+  Region     | Rooms  | Map IDs           | Spawn Spots
+  -----------|--------|-------------------|------------
+  Henesys    | 1-6    | 910000001-006     | 23 spots (was 24, 1 cleared for visibility)
+  Ludi       | 7-12   | 910000007-012     | 28 spots
+  Perion     | 13-17  | 910000013-017     | 26 spots
+  Elnath     | 18-22  | 910000018-022     | 27 spots
+  TOTAL      | 22     |                   | 104 spots
+
+Each room has 3 layout tiers: Top Row, Mid Row, Bot Row (+ stairs/door in some).
+Coordinates are hardcoded per region. X-axis has +/-5 jitter via modifyXCoordVariance().
+
+SKIP PROBABILITY (calculateSkippedSpot):
+  Henesys: 0.2% skip   (packed tight)
+  Ludi: 4% skip
+  Perion: 10% skip
+  Elnath: 15% skip      (most sparse)
+
+  + 2% per-spot skip in populateFreeMarketRoom()
+
+SPAWNING SEQUENCE (EnvironmentManager waves):
+  Wave 1: Henesys FM + FM entrance bots
+  Wave 2: Ludi FM + more entrance bots + merchant bots
+  Wave 4: Perion FM + entrance bots
+  Wave 5: Elnath FM
+  Each wave runs in parallel internally via ExecutorServiceManager.
+
+
+=====================================
+11. BOT-OPERATED SHOPS (PlayerShop path)
+=====================================
+
+File: ArtificialFreeMarket.createBotShopAtLocation()
+
+60% of shop spawns use this path:
+  1. Create bot character at position via createBotPollReadiness()
+  2. BotPlayerStorePermit(fakechar):
+     a. Creates PlayerShop with random store permit visual
+     b. Generates HiredMerchantArtificial with full shop data pipeline
+     c. Copies items and description from HMA to PlayerShop
+     d. Opens shop on map
+  3. 50% chance: bot faces opposite direction (microTurnAround)
+  4. 40% chance: bot sits in chair (500ms delay)
+
+These shops appear as a player character sitting with a store sign above them,
+unlike the mushroom merchant boxes. Both have identical inventory generation.
+
+ShopKeeper interface (adapter pattern):
+  ShopKeeper defines: visitShop(), chat(), botBuyItem(), removeVisitor()
+  HiredMerchantAdapter wraps HiredMerchant
+  PlayerShopAdapter wraps PlayerShop
+  Used by FMBot when browsing/buying from shops.
+
+FMBot behavior (FMBot.java):
+  9-state FSM: RESET -> NAV_TO_FM_ROOM -> PROCESS_ROOM -> BROWSING_ROOM ->
+               ACTION_PHASE -> ENTER_SHOP -> PROCESS_SHOP -> EXIT_SHOP -> EXIT_FM_ROOM
+  - Visits FM rooms 1-12 in sequence
+  - Builds shop visit queue sorted by distance with deck-cut shuffle
+  - Walking uses escalating pity timer (40% base, +10% per skip)
+  - Purchase logic: evaluates price/market ratio. Buys if <= market value with probability curve.
+
+
+=====================================
+12. KNOWN ISSUES & TODOS
+=====================================
+
+BUGS:
+  [CRITICAL] EquipListGenerator.getLevelOnTier() (line 239) uses == instead of .equals()
+    for String comparison. Currently DORMANT because the method is only called by
+    generateEquipListIIPU() which is commented out. Will break if IIPU path is re-enabled.
+
+  [MAJOR] S-TIER ITEM GAP: At itemPoolVersion=55, class equipment YAMLs (warrior, mage,
+    bowman, common) have no S-tier items. Their S-tier entries cap at version 18.
+    Only thief, darkscrolls, chair, and etc have S-tier items at v55.
+    Result: ~53% of shops (class-type) assigned S-tier cannot find S-tier items,
+    producing thin/empty equip lists despite the tier label.
+
+INCOMPLETE:
+  - ScrollInfoManager: Only ~10 equip types have scroll mappings (TODOs at lines 83-84)
+  - ScrollPatternGenerator: Same pattern for all tiers (TODO at line 101 for tier-specific)
+  - BIS pricing override: Disabled (if(false) block in EquipListGenerator line 149)
+  [x] FMShopDescriptionManager: Hot room special descriptions not yet implemented
+  - generateSpecialEquipList: Gacha/holiday shops stubbed out
+  - Class-specific scrolls for Warrior/Mage/Bowman primary shops (TODO in generateShop)
+  - Pirate shop type: Currently generates Common equipment (placeholder)
+
+PERFORMANCE:
+  [x] generateEquipListIIPU() was disabled ("VERY LONG LOAD") at ArtificialShopGenerator line 156.
+    When active, it added WZ-sourced equips alongside YAML equips per shop.
+  - ItemSelector re-parses YAML from disk on every getRandomItemFull() call.
+    Could be cached, but hasn't been a bottleneck.
