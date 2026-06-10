@@ -38,7 +38,7 @@ public class BotGeneration {
         }
 
         int botId = 999;
-        int baseId = 3;
+        int baseId = 2; // Base Bot Character
 
         try {
             Character chr = Character.loadCharFromDB(baseId, getBotClient(), false);
@@ -53,7 +53,7 @@ public class BotGeneration {
     }
 
     public static int createBot(Point pos, MapleMap map) {
-        int cid = 3;
+        int cid = 2; // CID 2 = Base Bot Character
 
         Character bot = null;
         try {
