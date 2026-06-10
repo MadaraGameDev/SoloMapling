@@ -20,7 +20,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static soloMapling.ArtificialPlayer.BotCustomization.getRandomChairId;
 import static soloMapling.ArtificialPlayer.BotCustomization.getRandomStorePermitId;
+import soloMapling.ArtificialPlayer.BotGeneration;
+
 import static soloMapling.ArtificialPlayer.BotGeneration.createBotPollReadiness;
+import static soloMapling.server.ExecutorServiceManager.runAsync;
 import static soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands.botSitChair;
 import static soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands.microTurnAround;
 import static soloMapling.DebugUtilities.debugprint;
@@ -460,17 +463,20 @@ public class ArtificialFreeMarket {
                 return;
             }
 
-            // Bot is definitely ready, create store
-            BotPlayerStorePermit(fakechar2);
+            // The spawn drop-down/turn-around choreography plays asynchronously,
+            // so wait it out before opening the store - a shop popping open while
+            // the bot is still mid-drop looks broken.
+            getScheduledExecutorService().schedule(() -> runAsync(() -> {
+                BotPlayerStorePermit(fakechar2);
 
-            if (Math.random() < 0.5) {
-                microTurnAround(fakechar2);
-            }
-            if (Math.random() < 0.4) {
-                Character finalFakechar = fakechar2;
-                getScheduledExecutorService().schedule(() -> botSitChair(finalFakechar, getRandomChairId()),
-                        500, TimeUnit.MILLISECONDS);
-            }
+                if (Math.random() < 0.5) {
+                    microTurnAround(fakechar2);
+                }
+                if (Math.random() < 0.4) {
+                    getScheduledExecutorService().schedule(() -> botSitChair(fakechar2, getRandomChairId()),
+                            500, TimeUnit.MILLISECONDS);
+                }
+            }), BotGeneration.SPAWN_CHOREOGRAPHY_MAX_MS, TimeUnit.MILLISECONDS);
         });
     }
 }

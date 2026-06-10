@@ -237,6 +237,10 @@ public abstract class BotSM implements EventSubscriber {
 
     // Method to start the scheduled task
     public synchronized void startScheduledTask() {
+        startScheduledTask(0);
+    }
+
+    public synchronized void startScheduledTask(long initialDelayMs) {
         if (scheduler == null || scheduler.isShutdown() || scheduler.isTerminated()) {
             scheduler = Executors.newScheduledThreadPool(1);
         }
@@ -251,7 +255,7 @@ public abstract class BotSM implements EventSubscriber {
                         e.printStackTrace(); // Handle exceptions to ensure the scheduler doesn't stop unexpectedly
                     }
                 }
-            }, 0, getRandomDelay(), TimeUnit.MILLISECONDS);
+            }, initialDelayMs, getRandomDelay(), TimeUnit.MILLISECONDS);
         }
     }
 

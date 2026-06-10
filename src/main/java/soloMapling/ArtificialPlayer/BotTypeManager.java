@@ -155,7 +155,12 @@ public class BotTypeManager {
             return;
         }
         bot.setRunning(true);
-        bot.startScheduledTask();
+        // Delay the first FSM tick past the spawn choreography window so a
+        // freshly spawned bot never starts acting mid-drop-down/turn-around.
+        // The random spread also staggers first actions across a batch.
+        long initialDelay = BotGeneration.SPAWN_CHOREOGRAPHY_MAX_MS
+                + java.util.concurrent.ThreadLocalRandom.current().nextLong(0, 3000);
+        bot.startScheduledTask(initialDelay);
     }
 
     public static void manuallyStopBot(Character fakechar) {

@@ -33,6 +33,15 @@ public class BotGeneration {
     // grab the same id, silently overwriting one bot with another in storage.
     private static final AtomicInteger currentBotCount = new AtomicInteger(100);
 
+    /**
+     * Worst-case duration of the spawn choreography (pre-drop delay 0.5-1.2s
+     * + portal lag 1.5s + drop-down playback + optional turn-around delay
+     * 1.0-1.5s + turn playback). Anything that must visually wait for a freshly
+     * spawned bot to finish arriving (FSM first tick, shop opening, chair sits,
+     * facing adjustments) should delay by at least this much.
+     */
+    public static final long SPAWN_CHOREOGRAPHY_MAX_MS = 7000;
+
     /** Total number of bots created since server start (for startup logging). */
     public static int getBotsCreatedCount() {
         return currentBotCount.get() - 100;
@@ -73,8 +82,15 @@ public class BotGeneration {
         int botId = SoloMaplingConstants.GameConstants.BOT_BASE_ID + currentBotCount.getAndIncrement();
         bot = setBotStats(bot, botId); // Bot onDemandBot
         addBotToServer(bot);
-        warpBotToLocation(bot, pos, map);
+        placeBotOnMap(bot, pos, map);
+        // Decorate before the drop-down plays so the bot arrives fully dressed
+        // (decoration is an in-memory cache lookup, takes microseconds).
         setBotVariables(bot);
+        // Choreography sleeps ~2.5-6s in total; play it on a virtual thread so
+        // mass spawning isn't gated on each bot's arrival animation. Drop-down ->
+        // turn-around ordering is preserved because it's one sequential task.
+        Character finalBot = bot;
+        runAsync(() -> playSpawnChoreography(finalBot));
         return botId;
     }
 
@@ -83,17 +99,18 @@ public class BotGeneration {
      * Places the bot on a map + position and plays the portal drop-down animation
      * so the spawn looks like a real player arriving. Sequence runs inline so the
      * caller waits for the full spawn choreography to finish before continuing —
-     * prevents downstream setup (e.g. opening a shop) from racing ahead of the
-     * drop-down / turn-around.
+     * use this (not createBot's async path) when downstream actions must not race
+     * the drop-down / turn-around (e.g. OPQ map transitions).
      *
-     * Timing:
-     *   - drop-down fires 500–1000ms after the bot is added to the map
-     *   - a random-direction micro turn-around fires 1000–1500ms after that
-     *
-     * This method blocks the calling thread for roughly 1.5–2.5s total. Callers
+     * This method blocks the calling thread for roughly 2.5-6s total. Callers
      * should already be running on a pooled executor (not the client thread).
      */
     public static void warpBotToLocation(Character fakechar, Point pos, MapleMap map) {
+        placeBotOnMap(fakechar, pos, map);
+        playSpawnChoreography(fakechar);
+    }
+
+    private static void placeBotOnMap(Character fakechar, Point pos, MapleMap map) {
         if (fakechar.getMap() == map) {
             fakechar.getMap().removePlayer(fakechar);
         }
@@ -101,7 +118,18 @@ public class BotGeneration {
         fakechar.setPosition(pos);
         fakechar.setStance(5);
         map.addPlayer(fakechar);
+    }
 
+    /**
+     * The spawn arrival choreography. Blocks the calling thread while it plays:
+     *   - drop-down fires 500-1200ms after the bot is added to the map
+     *     (plus ~1.5s portal lag inside botEnterPortalDropDown)
+     *   - a random-direction micro turn-around fires 1000-1500ms after the
+     *     drop-down playback completes - the strict ordering matters, the turn
+     *     must never overlap the drop-down packets
+     * Worst case is bounded by {@link #SPAWN_CHOREOGRAPHY_MAX_MS}.
+     */
+    private static void playSpawnChoreography(Character fakechar) {
         long dropDelayMs = ThreadLocalRandom.current().nextLong(500, 1201);
         if (!BotHelpers.sleepAmountSeconds(dropDelayMs)) return;
         botEnterPortalDropDown(fakechar);

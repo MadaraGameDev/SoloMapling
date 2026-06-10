@@ -573,14 +573,20 @@ public class EnvironmentManager {
             }
         }
 
-        // Register players with the dealer's table
+        // Register players with the dealer's table immediately (game logic),
+        // but face them towards the dealer only after the spawn drop-down/
+        // turn-around choreography finishes, so it can't override the facing.
         BotSM dealerBot = getBotById(dealerChar.getId());
         if (dealerBot instanceof BlackjackDealerBot bjDealer) {
             for (Character playerChar : playerChars) {
                 bjDealer.getTable().addPlayer(playerChar);
                 bjDealer.getInteractors().setRespondant(playerChar);
-                botFaceTowardsPoint(playerChar, seats[0]);
             }
+            ExecutorServiceManager.getScheduledExecutorService().schedule(() -> {
+                for (Character playerChar : playerChars) {
+                    botFaceTowardsPoint(playerChar, seats[0]);
+                }
+            }, BotGeneration.SPAWN_CHOREOGRAPHY_MAX_MS + 500, TimeUnit.MILLISECONDS);
             debugprint(fmt("Blackjack table spawned: dealer={}, players={}", dealerChar.getId(), playerChars.size()));
         } else {
             debugprint("Failed to retrieve BlackjackDealerBot from CharacterStorage");
@@ -808,9 +814,10 @@ public class EnvironmentManager {
                     if (fakechar != null) {
                         characterIds.add(fakechar.getId());
                         if (Math.random() < chairChance) {
+                            // Sit only after the spawn drop-down/turn-around finishes
                             ExecutorServiceManager.getScheduledExecutorService().schedule(
                                     () -> botSitChair(fakechar, getRandomChairId()),
-                                    500, TimeUnit.MILLISECONDS);
+                                    BotGeneration.SPAWN_CHOREOGRAPHY_MAX_MS + 500, TimeUnit.MILLISECONDS);
                         }
                     } else {
                         failureCount.incrementAndGet();
@@ -874,9 +881,10 @@ public class EnvironmentManager {
                     if (fakechar != null) {
                         characterIds.add(fakechar.getId());
                         if (Math.random() < chairChance) {
+                            // Sit only after the spawn drop-down/turn-around finishes
                             ExecutorServiceManager.getScheduledExecutorService().schedule(
                                     () -> botSitChair(fakechar, getRandomChairId()),
-                                    500, TimeUnit.MILLISECONDS);
+                                    BotGeneration.SPAWN_CHOREOGRAPHY_MAX_MS + 500, TimeUnit.MILLISECONDS);
                         }
                     } else {
                         failureCount.incrementAndGet();
