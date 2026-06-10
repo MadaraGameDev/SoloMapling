@@ -51,4 +51,12 @@
         <sqlFile path="db/data/161-admin-data.sql"/>
     </changeSet>
 
+    <changeSet id="162" author="soloMapling">
+        <sqlFile path="db/data/162-fmbot-data.sql"/>
+    </changeSet>
+
+    <changeSet id="171" author="soloMapling">
+        <sqlFile path="db/data/171-casino-shop-data.sql"/>
+    </changeSet>
+
 </databaseChangeLog>

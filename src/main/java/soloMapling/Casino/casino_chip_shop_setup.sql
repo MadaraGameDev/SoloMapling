@@ -1,5 +1,7 @@
 -- Casino Chip Shop Setup
--- Run this SQL against your Cosmic database to create the chip exchange shop.
+-- NOTE: This now runs automatically at server startup via Liquibase
+-- (src/main/resources/db/data/171-casino-shop-data.sql). This copy is kept
+-- only for reference / manual runs — keep both files in sync if prices change.
 -- Shop ID 9999001 is used by NPC 9000055 (see CasinoChipConfig.java).
 --
 -- These values must match CasinoChipConfig.java:
