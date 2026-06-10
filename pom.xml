@@ -42,33 +42,15 @@
     </ciManagement>
 
     <properties>
-        <!-- Project -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <mainClass>net.server.Server</mainClass>
 
-        <!-- Maven plugins -->
-        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version> <!-- For running unit tests -->
-        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version> <!-- Disabled. (for building thin jar) -->
-        <maven-assembly-plugin.version>3.7.1
-        </maven-assembly-plugin.version> <!-- For packaging the executable fat jar -->
-
-        <!-- Dependencies -->
-        <slf4j-api.version>2.0.17</slf4j-api.version> <!-- Logging facade -->
-        <log4j.version>2.25.0</log4j.version> <!-- Slf4j implementation -->
-        <graalvm-js.version>23.0.4</graalvm-js.version>
-        <graalvm-js-scriptengine.version>24.0.1</graalvm-js-scriptengine.version> <!-- ScriptEngine implementation -->
-        <netty.version>4.2.2.Final</netty.version> <!-- Networking -->
-        <yamlbeans.version>1.17</yamlbeans.version> <!-- Config file -->
-        <jcip-annotations.version>1.0</jcip-annotations.version> <!-- Annotations for concurrency documentation -->
-        <HikariCP.version>6.3.0</HikariCP.version> <!-- Database connection pool -->
-        <mysql-connector-j.version>9.3.0</mysql-connector-j.version> <!-- MySQL JDBC driver -->
-        <jdbi-version>3.49.5</jdbi-version> <!-- Convenience wrapper around JDBC -->
-        <liquibase-core.version>4.32.0</liquibase-core.version> <!-- Database migrations -->
-        <junit.version>5.13.1</junit.version> <!-- Unit test -->
-        <mockito.version>5.18.0</mockito.version> <!-- Unit test -->
+        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version> <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version> <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version> <slf4j-api.version>2.0.17</slf4j-api.version> <log4j.version>2.25.0</log4j.version> <graalvm-js.version>23.0.4</graalvm-js.version>
+        <graalvm-js-scriptengine.version>24.0.1</graalvm-js-scriptengine.version> <netty.version>4.2.2.Final</netty.version> <yamlbeans.version>1.17</yamlbeans.version> <jcip-annotations.version>1.0</jcip-annotations.version> <HikariCP.version>6.3.0</HikariCP.version> <mysql-connector-j.version>9.3.0</mysql-connector-j.version> <jdbi-version>3.49.5</jdbi-version> <liquibase-core.version>4.32.0</liquibase-core.version> <junit.version>5.13.1</junit.version> <mockito.version>5.18.0</mockito.version> <jgrapht.version>1.5.2</jgrapht.version>
+        <jgraphx.version>4.2.2</jgraphx.version>
     </properties>
 
     <dependencies>
@@ -83,7 +65,6 @@
             <version>${jcip-annotations.version}</version>
         </dependency>
 
-        <!-- Database -->
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
@@ -105,7 +86,6 @@
             <version>${liquibase-core.version}</version>
         </dependency>
 
-        <!-- Networking -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport</artifactId>
@@ -127,7 +107,6 @@
             <version>${netty.version}</version>
         </dependency>
 
-        <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -149,7 +128,6 @@
             <version>${log4j.version}</version>
         </dependency>
 
-        <!-- Scripting -->
         <dependency>
             <groupId>org.graalvm.js</groupId>
             <artifactId>js</artifactId>
@@ -161,7 +139,32 @@
             <version>${graalvm-js-scriptengine.version}</version>
         </dependency>
 
-        <!-- Testing -->
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+            <version>${jgrapht.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-io</artifactId>
+            <version>${jgrapht.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-ext</artifactId>
+            <version>${jgrapht.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-guava</artifactId>
+            <version>${jgrapht.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.vlsi.mxgraph</groupId>
+            <artifactId>jgraphx</artifactId>
+            <version>${jgraphx.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -192,12 +195,10 @@
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Explicitly disable default jar which includes no dependencies -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -216,7 +217,6 @@
                 <version>${maven-surefire-plugin.version}</version>
             </plugin>
 
-            <!-- Enable assembling jar that includes all dependencies -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
