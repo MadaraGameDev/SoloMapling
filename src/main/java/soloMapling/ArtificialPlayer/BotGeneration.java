@@ -11,6 +11,7 @@ import soloMapling.server.SoloMaplingUtilities;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static soloMapling.ArtificialPlayer.BotClientHandler.getBotClient;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.WarpCommands.botEnterPortalDropDown;
@@ -28,7 +29,14 @@ public class BotGeneration {
 
     // Bot generation - handles anything related to putting the bots in the server
 
-    private static int currentBotCount = 100;
+    // Atomic because bots spawn in parallel - a plain int would let two threads
+    // grab the same id, silently overwriting one bot with another in storage.
+    private static final AtomicInteger currentBotCount = new AtomicInteger(100);
+
+    /** Total number of bots created since server start (for startup logging). */
+    public static int getBotsCreatedCount() {
+        return currentBotCount.get() - 100;
+    }
 
 
     public static Character getConsoleBot() {
@@ -62,8 +70,7 @@ public class BotGeneration {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        int botId = SoloMaplingConstants.GameConstants.BOT_BASE_ID + currentBotCount;
-        currentBotCount++;
+        int botId = SoloMaplingConstants.GameConstants.BOT_BASE_ID + currentBotCount.getAndIncrement();
         bot = setBotStats(bot, botId); // Bot onDemandBot
         addBotToServer(bot);
         warpBotToLocation(bot, pos, map);
@@ -154,33 +161,31 @@ public class BotGeneration {
     }
 
     /*
-    Creates a bot on demand and waits a few millisecond for it to be fully ready to be used.
-    If the bot isn't ready after 3000ms, it will return null.
+    Creates a bot on demand. The bot is registered in channel storage synchronously
+    inside createBot, so it's normally ready on the first check - the 100ms poll
+    loop only kicks in as a fallback. If the bot isn't ready after 3000ms, returns null.
      */
     public static Character createBotPollReadiness(Point position, int mapId) {
         int botId = BotGeneration.createBot(position, getMapleMapById(mapId));
 
-        // Poll for bot readiness - check every 100ms up to 3 seconds
-        Character fakechar2 = null;
         for (int i = 0; i < 30; i++) { // 30 * 100ms = 3000ms max
+            Character fakechar = BotHelpers.getCharFromChannelStorage(botId);
+            if (fakechar != null) {
+                if (i > 0) {
+                    debugprint("Bot " + botId + " ready after " + (i * 100) + "ms");
+                }
+                return fakechar;
+            }
             try {
                 Thread.sleep(100);
-                fakechar2 = BotHelpers.getCharFromChannelStorage(botId);
-                if (fakechar2 != null) {
-                    debugprint("Bot " + botId + " ready after " + ((i + 1) * 100) + "ms");
-                    break; // Bot is ready, proceed immediately
-                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return null;
             }
         }
 
-        if (fakechar2 == null) {
-            System.err.println("Bot " + botId + " not ready after 3 seconds, skipping store");
-            return null;
-        }
-        return fakechar2;
+        System.err.println("Bot " + botId + " not ready after 3 seconds, skipping store");
+        return null;
     }
 
 }

@@ -1,10 +1,22 @@
 package soloMapling.itemPool;
 
 import constants.inventory.EquipType;
+import provider.Data;
+import provider.DataProviderFactory;
+import provider.DataTool;
+import provider.wz.WZFiles;
+import provider.wz.XMLDomMapleData;
 import server.ItemInformationProvider;
 
+import java.io.FileInputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * One-time startup cache of all equip metadata parsed from WZ.
@@ -126,52 +138,49 @@ public class EquipMetadataCache {
 
     // ── Initialization ───────────────────────────────────────────────────
 
+    // Character.wz subdirectories that contain the equips we care about.
+    // Names double as the category names inside String.wz Eqp.img.
+    private static final List<String> CHARACTER_WZ_DIRS = List.of(
+            "Accessory", "Cap", "Cape", "Coat", "Glove", "Longcoat",
+            "Pants", "Ring", "Shield", "Shoes", "Weapon");
+
     public static synchronized void initialize() {
         if (initialized) return;
 
+        System.out.println("[EquipMetadataCache] Initializing - scanning WZ equip data...");
         long start = System.currentTimeMillis();
-        ItemInformationProvider ii = ItemInformationProvider.getInstance();
 
-        List<EquipEntry> all = new ArrayList<>();
+        List<EquipEntry> all;
+        try {
+            all = scanCharacterWzDirectories();
+        } catch (Exception e) {
+            System.err.println("[EquipMetadataCache] Directory scan failed: " + e);
+            all = new ArrayList<>();
+        }
+        if (all.isEmpty()) {
+            System.err.println("[EquipMetadataCache] Directory scan found nothing - "
+                    + "falling back to id-range probing via ItemInformationProvider");
+            all = scanViaItemInformationProvider();
+        }
+
+        // selectWeightedRandom relies on ascending id order to bias towards
+        // classic (low-id) equips, so sort before grouping.
+        all.sort(Comparator.comparingInt(e -> e.id));
+
         Map<EquipType, List<EquipEntry>> typeMap = new ConcurrentHashMap<>();
         Map<EquipType, List<EquipEntry>> cashMap = new ConcurrentHashMap<>();
-
-        int scanned = 0;
-        for (Map.Entry<EquipType, int[]> rangeEntry : EQUIP_RANGES.entrySet()) {
-            EquipType eqType = rangeEntry.getKey();
-            int[] range = rangeEntry.getValue();
-
-            List<EquipEntry> typeList = new ArrayList<>();
-            List<EquipEntry> cashList = new ArrayList<>();
-
-            for (int id = range[0]; id <= range[1]; id++) {
-                Map<String, Integer> stats = ii.getEquipStats(id);
-                if (stats == null) continue;  // item doesn't exist in WZ
-
-                scanned++;
-                int gender = deriveGender(id);
-                int reqLevel = stats.getOrDefault("reqLevel", 0);
-                int reqJob = stats.getOrDefault("reqJob", 0);
-                boolean isCash = stats.getOrDefault("cash", 0) == 1;
-                boolean isUntradeable = ii.isUntradeableRestricted(id);
-                boolean isQuest = ii.isQuestItem(id);
-                int wzPrice = ii.getWholePrice(id);
-                String name = ii.getName(id);
-
-                EquipEntry entry = new EquipEntry(id, eqType, gender, reqLevel,
-                        reqJob, isCash, isUntradeable, isQuest, wzPrice,
-                        name != null ? name : "?");
-
-                all.add(entry);
-                typeList.add(entry);
-                if (isCash) {
-                    cashList.add(entry);
-                }
-            }
-
-            typeMap.put(eqType, Collections.unmodifiableList(typeList));
-            cashMap.put(eqType, Collections.unmodifiableList(cashList));
+        for (EquipType eqType : EQUIP_RANGES.keySet()) {
+            typeMap.put(eqType, new ArrayList<>());
+            cashMap.put(eqType, new ArrayList<>());
         }
+        for (EquipEntry entry : all) {
+            typeMap.get(entry.equipType).add(entry);
+            if (entry.cash) {
+                cashMap.get(entry.equipType).add(entry);
+            }
+        }
+        typeMap.replaceAll((k, v) -> Collections.unmodifiableList(v));
+        cashMap.replaceAll((k, v) -> Collections.unmodifiableList(v));
 
         instance = new EquipMetadataCache(
                 Collections.unmodifiableList(all),
@@ -181,9 +190,151 @@ public class EquipMetadataCache {
         initialized = true;
 
         long elapsed = System.currentTimeMillis() - start;
-        int cashTotal = cashMap.values().stream().mapToInt(List::size).sum();
+        long cashTotal = all.stream().filter(e -> e.cash).count();
         System.out.println("[EquipMetadataCache] Initialized in " + elapsed + "ms — "
-                + scanned + " equips cached (" + cashTotal + " cash/NX)");
+                + all.size() + " equips cached (" + cashTotal + " cash/NX)");
+    }
+
+    // ── Fast path: enumerate Character.wz directories directly ──────────
+    // The filename IS the item id, so only equips that actually exist get
+    // parsed - no probing of 30k candidate ids, no linear directory searches
+    // per id (which is what made the ItemInformationProvider path take ~20s).
+    // Each file parse is self-contained, so directories scan in parallel.
+
+    /** Intermediate scan result; name is resolved afterwards from String.wz. */
+    private record ScannedEquip(int id, EquipType type, int reqLevel, int reqJob,
+                                boolean cash, boolean untradeable, boolean quest,
+                                int price) {
+    }
+
+    private static List<EquipEntry> scanCharacterWzDirectories() throws Exception {
+        Path charWzRoot = WZFiles.CHARACTER.getFile();
+
+        List<CompletableFuture<List<ScannedEquip>>> futures = new ArrayList<>();
+        try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (String dir : CHARACTER_WZ_DIRS) {
+                Path dirPath = charWzRoot.resolve(dir);
+                futures.add(CompletableFuture.supplyAsync(() -> scanEquipDirectory(dirPath), pool));
+            }
+            CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+        }
+
+        Map<Integer, String> names = buildNameTable();
+
+        List<EquipEntry> all = new ArrayList<>();
+        for (CompletableFuture<List<ScannedEquip>> future : futures) {
+            for (ScannedEquip s : future.get()) {
+                String name = names.get(s.id);
+                all.add(new EquipEntry(s.id, s.type, deriveGender(s.id), s.reqLevel,
+                        s.reqJob, s.cash, s.untradeable, s.quest, s.price,
+                        name != null ? name : "?"));
+            }
+        }
+        return all;
+    }
+
+    private static List<ScannedEquip> scanEquipDirectory(Path dir) {
+        List<ScannedEquip> entries = new ArrayList<>();
+        if (!Files.isDirectory(dir)) {
+            return entries;
+        }
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.img.xml")) {
+            for (Path file : stream) {
+                String fileName = file.getFileName().toString();
+                int id;
+                try {
+                    id = Integer.parseInt(fileName.substring(0, fileName.length() - ".img.xml".length()));
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                EquipType eqType = classify(id);
+                if (eqType == null) {
+                    continue; // outside every range we track (e.g. taming mobs)
+                }
+                try (FileInputStream fis = new FileInputStream(file.toFile())) {
+                    Data itemData = new XMLDomMapleData(fis, dir);
+                    Data info = itemData.getChildByPath("info");
+                    if (info == null) continue;
+                    entries.add(new ScannedEquip(id, eqType,
+                            DataTool.getInt("reqLevel", info, 0),
+                            DataTool.getInt("reqJob", info, 0),
+                            DataTool.getInt("cash", info, 0) == 1,
+                            DataTool.getIntConvert("tradeBlock", info, 0) == 1,
+                            DataTool.getIntConvert("quest", info, 0) == 1,
+                            DataTool.getInt("price", info, 0)));
+                } catch (Exception e) {
+                    System.err.println("[EquipMetadataCache] Failed to parse " + fileName + ": " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[EquipMetadataCache] Failed to scan " + dir + ": " + e.getMessage());
+        }
+        return entries;
+    }
+
+    /** One pass over String.wz Eqp.img building an id → name table. */
+    private static Map<Integer, String> buildNameTable() {
+        Map<Integer, String> names = new HashMap<>();
+        try {
+            Data eqpStrings = DataProviderFactory.getDataProvider(WZFiles.STRING).getData("Eqp.img");
+            Data eqp = eqpStrings != null ? eqpStrings.getChildByPath("Eqp") : null;
+            if (eqp == null) {
+                return names;
+            }
+            for (Data category : eqp.getChildren()) {
+                for (Data item : category.getChildren()) {
+                    try {
+                        int id = Integer.parseInt(item.getName());
+                        String name = DataTool.getString("name", item, null);
+                        if (name != null) {
+                            names.put(id, name);
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[EquipMetadataCache] Failed to load names from String.wz: " + e.getMessage());
+        }
+        return names;
+    }
+
+    private static EquipType classify(int id) {
+        for (Map.Entry<EquipType, int[]> e : EQUIP_RANGES.entrySet()) {
+            int[] range = e.getValue();
+            if (id >= range[0] && id <= range[1]) {
+                return e.getKey();
+            }
+        }
+        return null;
+    }
+
+    // ── Fallback: original id-range probing (slow, ~20s) ────────────────
+
+    private static List<EquipEntry> scanViaItemInformationProvider() {
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        List<EquipEntry> all = new ArrayList<>();
+
+        for (Map.Entry<EquipType, int[]> rangeEntry : EQUIP_RANGES.entrySet()) {
+            EquipType eqType = rangeEntry.getKey();
+            int[] range = rangeEntry.getValue();
+
+            for (int id = range[0]; id <= range[1]; id++) {
+                Map<String, Integer> stats = ii.getEquipStats(id);
+                if (stats == null) continue;  // item doesn't exist in WZ
+
+                String name = ii.getName(id);
+                all.add(new EquipEntry(id, eqType, deriveGender(id),
+                        stats.getOrDefault("reqLevel", 0),
+                        stats.getOrDefault("reqJob", 0),
+                        stats.getOrDefault("cash", 0) == 1,
+                        ii.isUntradeableRestricted(id),
+                        ii.isQuestItem(id),
+                        ii.getWholePrice(id),
+                        name != null ? name : "?"));
+            }
+        }
+        return all;
     }
 
     // ── Gender derivation (4th digit convention) ─────────────────────────

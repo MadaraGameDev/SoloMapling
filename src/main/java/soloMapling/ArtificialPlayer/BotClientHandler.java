@@ -38,7 +38,7 @@ public class BotClientHandler {
         player.getClient().disconnect(true, false);
 
         // Setup environment // Comment this line if you want no bots.
-        MethodScheduler.runAfterDelay(() -> environmentLoadStartup(), 3000);
+        MethodScheduler.runAfterDelay(() -> environmentLoadStartup(), 1000);
 
     }
 

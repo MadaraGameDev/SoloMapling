@@ -25,7 +25,7 @@ public class ExecutorServiceManager {
         return scheduledExecutorService;
     }
 
-    private static ExecutorService getVirtualThreadExecutorService() {
+    public static ExecutorService getVirtualThreadExecutorService() {
         return virtualThreadExecutor;
     }
 

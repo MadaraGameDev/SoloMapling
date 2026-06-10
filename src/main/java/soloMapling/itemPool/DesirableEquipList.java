@@ -13,6 +13,7 @@ public class DesirableEquipList {
 
     public static synchronized void load() {
         if (loaded) return;
+        long start = System.currentTimeMillis();
         try {
             YamlReader reader = new YamlReader(new FileReader(YAML_PATH));
             @SuppressWarnings("unchecked")
@@ -32,7 +33,8 @@ public class DesirableEquipList {
                 }
             }
             loaded = true;
-            System.out.println("[DesirableEquipList] Loaded " + desirableIds.size() + " whitelisted item IDs");
+            System.out.println("[DesirableEquipList] Loaded " + desirableIds.size() + " whitelisted item IDs in "
+                    + (System.currentTimeMillis() - start) + "ms");
         } catch (Exception e) {
             System.err.println("[DesirableEquipList] Failed to load: " + e.getMessage());
             loaded = true;

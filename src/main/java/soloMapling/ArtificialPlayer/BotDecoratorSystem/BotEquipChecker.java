@@ -41,6 +41,9 @@ public class BotEquipChecker {
             List<Character> naked = new ArrayList<>();
             for (Character chr : allChars) {
                 if (!isBot(chr)) continue;
+                // Mapless bots (e.g. the Console bot) can't be dressed - equipping
+                // broadcasts a char-look update to the bot's map.
+                if (chr.getMap() == null) continue;
                 totalBots++;
                 if (isNaked(chr)) naked.add(chr);
             }

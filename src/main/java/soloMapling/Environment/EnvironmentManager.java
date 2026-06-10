@@ -2,6 +2,7 @@ package soloMapling.Environment;
 
 import client.Character;
 import server.maps.MapleMap;
+import soloMapling.ArtificialPlayer.BotGeneration;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorationQueue;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotEquipChecker;
@@ -11,8 +12,6 @@ import soloMapling.ArtificialPlayer.BotTypeManager;
 import soloMapling.ArtificialPlayer.BotTypes.Blackjack.BlackjackDealerBot;
 import soloMapling.ArtificialPlayer.ConversationManager;
 import soloMapling.ArtificialPlayer.SocialHotPotatoManager;
-import soloMapling.itemPool.DesirableEquipList;
-import soloMapling.itemPool.EquipMetadataCache;
 import soloMapling.Casino.CasinoChipConfig;
 import soloMapling.server.ExecutorServiceManager;
 import soloMapling.server.NpcSpawner;
@@ -67,7 +66,6 @@ public class EnvironmentManager {
 
 
     private static final Random random = new Random();
-    private static final int PHASE_DELAY_SECONDS = 1;
     private static final int FM_ENTRANCE = 910000000;
     private static final int HENESYS = 100000000;
     private static final int HENESYS_MARKET = 100000100;
@@ -79,104 +77,97 @@ public class EnvironmentManager {
     private static final int OPQ_LOBBY = 200080101;
 
     public static void environmentLoadStartup() {
-        EquipMetadataCache.initialize();
-        DesirableEquipList.load();
+        // EquipMetadataCache + DesirableEquipList are server data, loaded during
+        // Server.init() alongside the other WZ-derived data - guaranteed ready
+        // before any player can trigger this.
+        long startupStart = System.currentTimeMillis();
 
-        // ─── Wave 1: Essentials — immediate player-facing ───
-        List<Runnable> wave1 = List.of(
+        runWave(1, "Essentials", List.of(
                 () -> spawnCasinoNpcs(),
                 () -> spawnTutorialBot(),
                 () -> spawnHenesysBotsBatch(10, 0, 0, 0),
                 () -> populateFreeMarketRegion("henesys"),
                 () -> spawnFMEntranceBotsBatch(5, 5, 5)
-        );
+        ));
 
-        runPhase(wave1);
-        phaseDelay();
-
-        // ─── Wave 2: FM buildout ───
-        List<Runnable> wave2 = List.of(
+        runWave(2, "FM buildout", List.of(
                 () -> populateFreeMarketRegion("ludi"),
                 () -> spawnFMEntranceBotsBatch(5, 5, 5),
                 () -> spawnMerchBotsBatch("m1", 2, 2, 1),
                 () -> spawnMerchBotsBatch("m2", 2, 2, 0),
                 () -> spawnMerchBotsBatch("m5", 2, 2, 0),
                 () -> spawnGachaBotsHenesys()
-        );
+        ));
 
-        runPhase(wave2);
-        phaseDelay();
-
-        // ─── Wave 3: Henesys population ───
-        List<Runnable> wave3 = List.of(
+        runWave(3, "Henesys population", List.of(
                 () -> spawnJQBotsPetPark(),
                 () -> spawnHenesysBotsBatch(10, 10, 0, 5),
                 () -> spawnFillerBotsHenesys()
-        );
-
-        runPhase(wave3);
+        ));
         SocialHotPotatoManager.getInstance().start();
         ConversationManager.getInstance().start();
-        phaseDelay();
 
-        // ─── Wave 4: Expand FM + Henesys Market ───
-        List<Runnable> wave4 = List.of(
+        runWave(4, "Expand FM + Henesys Market", List.of(
                 () -> populateFreeMarketRegion("perion"),
                 () -> spawnFMEntranceBotsBatch(5, 5, 5),
                 () -> spawnMerchBotsBatch("m1", 3, 3, 0),
                 () -> spawnMerchBotsBatch("m2", 2, 2, 1),
                 () -> spawnMerchBotsBatch("m5", 3, 3, 1),
                 () -> spawnFillerBotsHenesysMarket()
-        );
+        ));
 
-        runPhase(wave4);
-        phaseDelay();
-
-        // ─── Wave 5: Henesys sub-areas ───
-        List<Runnable> wave5 = List.of(
+        runWave(5, "Henesys sub-areas", List.of(
                 () -> populateFreeMarketRegion("elnath"),
                 () -> spawnHenesysBotsBatch(10, 10, 10, 4),
                 () -> spawnFillerBotsHenesysPark(),
                 () -> spawnFillerBotsPotionShop(),
                 () -> spawnFillerBotsGameZone(),
                 () -> spawnGameZoneHostBots()
-        );
+        ));
 
-        runPhase(wave5);
-        phaseDelay();
-
-        // ─── Wave 6: Specialty areas ───
-        List<Runnable> wave6 = List.of(
+        runWave(6, "Specialty areas", List.of(
                 () -> spawnBlackjackTables(),
                 () -> spawnDropGameBotPotionShop(),
                 () -> spawnDropGameSpectatorsPotionShop(),
                 () -> spawnSocialBotsPetPark(),
                 () -> convertRandomFillersToScrollBots()
-        );
+        ));
 
-        runPhase(wave6);
-        phaseDelay();
-
-        // ─── Wave 7: Late arrivals ───
-        List<Runnable> wave7 = List.of(
+        runWave(7, "Late arrivals", List.of(
                 () -> spawnOPQBotsInLobby(),
                 () -> spawnMerchBotsBatch("m1", 2, 2, 0),
                 () -> spawnMerchBotsBatch("m2", 2, 2, 1),
                 () -> spawnMerchBotsBatch("m5", 2, 2, 1)
-        );
+        ));
 
-        runPhase(wave7);
         BotDecorationQueue.start();
         BotEquipChecker.start();
+
+        double totalSeconds = (System.currentTimeMillis() - startupStart) / 1000.0;
+        System.out.println(String.format(
+                "[EnvironmentManager] === All bots initialized: %d bots in %.1fs ===",
+                BotGeneration.getBotsCreatedCount(), totalSeconds));
     }
 
-    private static void phaseDelay() {
-        try {
-            debugprint(fmt("Phase complete. Waiting {}s before next wave...", PHASE_DELAY_SECONDS));
-            Thread.sleep(PHASE_DELAY_SECONDS * 1000L);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    /**
+     * Run one startup wave: all tasks in parallel, blocking until the wave
+     * completes. Logs start/end with elapsed time and bots spawned. FM room
+     * population is fire-and-forget internally, so its bots may be attributed
+     * to a later wave's count.
+     */
+    private static void runWave(int number, String name, List<Runnable> tasks) {
+        System.out.println(String.format(
+                "[EnvironmentManager] === Wave %d (%s) starting ===", number, name));
+        long start = System.currentTimeMillis();
+        int botsBefore = BotGeneration.getBotsCreatedCount();
+
+        runPhase(tasks);
+
+        double seconds = (System.currentTimeMillis() - start) / 1000.0;
+        int botsSpawned = BotGeneration.getBotsCreatedCount() - botsBefore;
+        System.out.println(String.format(
+                "[EnvironmentManager] === Wave %d (%s) complete - %d bots spawned in %.1fs ===",
+                number, name, botsSpawned, seconds));
     }
 
     private static void spawnFMEntranceBotsBatch(int m1Count, int m2Count, int m5Count) {
@@ -237,8 +228,11 @@ public class EnvironmentManager {
     }
 
     private static void runPhase(List<Runnable> tasks) {
+        // Virtual threads: wave tasks spend most of their time blocked (spawn
+        // choreography sleeps, readiness latches), so they shouldn't occupy
+        // the fixed thread pool.
         CompletableFuture<?>[] futures = tasks.stream()
-                .map(task -> CompletableFuture.runAsync(task, ExecutorServiceManager.getExecutorService()))
+                .map(task -> CompletableFuture.runAsync(task, ExecutorServiceManager.getVirtualThreadExecutorService()))
                 .toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).join();
     }

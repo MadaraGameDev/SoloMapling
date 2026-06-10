@@ -881,6 +881,11 @@ public class Server {
         futures.add(initExecutor.submit(CashItemFactory::loadAllCashItems));
         futures.add(initExecutor.submit(Quest::loadAllQuests));
         futures.add(initExecutor.submit(SkillbookInformationProvider::loadAllSkillbookInformation));
+        // SoloMapling server data (bot equip metadata) - loaded here with the rest
+        // of the WZ-derived data so it's ready before any player can trigger the
+        // bot environment startup.
+        futures.add(initExecutor.submit(soloMapling.itemPool.EquipMetadataCache::initialize));
+        futures.add(initExecutor.submit(soloMapling.itemPool.DesirableEquipList::load));
         initExecutor.shutdown();
 
         TimeZone.setDefault(TimeZone.getTimeZone(YamlConfig.config.server.TIMEZONE));
