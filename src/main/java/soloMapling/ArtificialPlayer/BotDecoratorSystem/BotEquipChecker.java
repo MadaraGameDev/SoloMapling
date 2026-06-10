@@ -58,9 +58,9 @@ public class BotEquipChecker {
                         try {
                             BotDecorateEquips.equipTopBottom(chr);
                             fixedCount[0]++;
-                            System.out.println("[BotEquipChecker] Equipped " + chr.getName()
-                                    + " (job=" + chr.getJob().name() + " lv=" + chr.getLevel()
-                                    + ") [" + fixedCount[0] + "/" + naked.size() + "]");
+//                            System.out.println("[BotEquipChecker] Equipped " + chr.getName()
+//                                    + " (job=" + chr.getJob().name() + " lv=" + chr.getLevel()
+//                                    + ") [" + fixedCount[0] + "/" + naked.size() + "]");
                         } catch (Exception e) {
                             failedCount[0]++;
                             System.out.println("[BotEquipChecker] FAILED " + chr.getName()

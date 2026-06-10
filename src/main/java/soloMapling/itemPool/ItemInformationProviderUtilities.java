@@ -174,17 +174,37 @@ public class ItemInformationProviderUtilities {
     }
 
     /**
-     * Full valid equips list, then prioritizes lower id equips for more classic oriented equips.
-     * Takes considerably longer, but prioritizes old school equips
+     * Picks a random non-cash equip matching the bot's level window, job style and
+     * gender, weighted towards lower ids (more classic equips). Pure in-memory
+     * lookup against {@link EquipMetadataCache} — no WZ access.
+     *
+     * <p>Returns null if the cache isn't initialized yet (early spawns fall back
+     * to QuickEquip / the decoration queue) or if nothing matches.
      */
     public static Integer getRandomEquip(EquipType eqType, int maxLevel, Job jobStyle, int gender) {
-//        debugprint("Checking for: " + eqType + ", " + jobStyle);
-        List<Integer> itemList = getAllItemIdsByEquipType(eqType);
-        List<Integer> validEquips = itemList
-                .parallelStream()
-                .filter(itemId -> checkApproporiateEquip(itemId, maxLevel, jobStyle, gender))
-                .collect(Collectors.toList());
-//        debugprint("Finished Validating List for: " + eqType + ", " + jobStyle);
+        if (!EquipMetadataCache.isInitialized()) {
+            debugprint("[getRandomEquip] EquipMetadataCache not initialized - skipping " + eqType);
+            return null;
+        }
+
+        // Same level window as the legacy WZ-scan path:
+        // maxLevel - max(25% of maxLevel, 10) <= reqLevel <= maxLevel
+        int minLevel = maxLevel - max((int) (maxLevel * 0.25), 10);
+
+        List<EquipMetadataCache.EquipEntry> candidates = EquipMetadataCache.get()
+                .query(eqType)
+                .nonCash()
+                .forGender(gender)
+                .levelBetween(minLevel, maxLevel)
+                .forJobExact(getReqJobViaJobStyle(jobStyle))
+                .asList();
+
+        // Cache lists are built in ascending id order, which selectWeightedRandom
+        // relies on to bias towards classic (low-id) equips.
+        List<Integer> validEquips = new ArrayList<>(candidates.size());
+        for (EquipMetadataCache.EquipEntry entry : candidates) {
+            validEquips.add(entry.id);
+        }
         return selectWeightedRandom(validEquips);
     }
 

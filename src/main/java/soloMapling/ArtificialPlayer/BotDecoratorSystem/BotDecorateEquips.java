@@ -5,7 +5,6 @@ import client.Job;
 import constants.inventory.EquipType;
 import soloMapling.ArtificialPlayer.BotCustomization;
 
-import java.util.concurrent.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -13,17 +12,14 @@ import java.util.Random;
 import static soloMapling.ArtificialPlayer.BotDecoratorSystem.JobPathLogic.determineBowmanPath;
 import static soloMapling.ArtificialPlayer.BotDecoratorSystem.JobPathLogic.determineThiefPath;
 import static soloMapling.ArtificialPlayer.BotDecoratorSystem.JobPathLogic.determineWarriorPath;
-import static soloMapling.DebugUtilities.debugprint;
 import static soloMapling.itemPool.ItemInformationProviderUtilities.getRandomEquipForWearing;
 
 public class BotDecorateEquips {
     /**
-     * Full (expensive) decoration pass. Called from the BotDecorationQueue worker,
-     * which means this already runs on a pooled background thread - do NOT scatter
-     * into more runAsync tasks here, or multiple threads will mutate the same
-     * Character's inventory concurrently. Sub-methods may still use internal
-     * CompletableFuture fan-out for parallel WZ *reads* as long as they commit
-     * the equips sequentially on this thread.
+     * Full decoration pass. Equip selection is an in-memory EquipMetadataCache
+     * lookup, so this is cheap enough to run inline at spawn time. Everything
+     * runs sequentially on the calling thread - do NOT fan out into async tasks,
+     * or multiple threads will mutate the same Character's inventory concurrently.
      */
     public static void decorateBotEquips(Character fakechar) {
         equipTopBottom(fakechar);
@@ -46,34 +42,23 @@ public class BotDecorateEquips {
     }
 
     static void equipTopBottom(Character fakechar) {
-        CompletableFuture<Integer> coatFuture = CompletableFuture.supplyAsync(() -> getCoatId(fakechar));
-        CompletableFuture<Integer> pantsFuture = CompletableFuture.supplyAsync(() -> getPantsId(fakechar));
-        CompletableFuture<Integer> longcoatFuture = CompletableFuture.supplyAsync(() -> getLongcoatId(fakechar));
+        Integer coatId = getCoatId(fakechar);
+        Integer pantsId = getPantsId(fakechar);
+        Integer longcoatId = getLongcoatId(fakechar);
 
-        CompletableFuture<Void> all = CompletableFuture.allOf(coatFuture, pantsFuture, longcoatFuture);
-        all.join();
-
-        try {
-            Integer coatId = coatFuture.get();
-            Integer pantsId = pantsFuture.get();
-            Integer longcoatId = longcoatFuture.get();
-
-            if (coatId != null && pantsId != null) {
-                BotCustomization.EquipBot(fakechar, coatId);
-                BotCustomization.EquipBot(fakechar, pantsId);
-            } else if (longcoatId != null) {
-                BotCustomization.EquipBot(fakechar, longcoatId);
-            } else if (coatId != null) {
-                BotCustomization.EquipBot(fakechar, coatId);
-            } else if (pantsId != null) {
-                BotCustomization.EquipBot(fakechar, pantsId);
-            } else {
-                System.out.println("[equipTopBottom] No top/bottom/overall found for "
-                        + fakechar.getName() + " (job=" + fakechar.getJob().name()
-                        + " lv=" + fakechar.getLevel() + ")");
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        if (coatId != null && pantsId != null) {
+            BotCustomization.EquipBot(fakechar, coatId);
+            BotCustomization.EquipBot(fakechar, pantsId);
+        } else if (longcoatId != null) {
+            BotCustomization.EquipBot(fakechar, longcoatId);
+        } else if (coatId != null) {
+            BotCustomization.EquipBot(fakechar, coatId);
+        } else if (pantsId != null) {
+            BotCustomization.EquipBot(fakechar, pantsId);
+        } else {
+            System.out.println("[equipTopBottom] No top/bottom/overall found for "
+                    + fakechar.getName() + " (job=" + fakechar.getJob().name()
+                    + " lv=" + fakechar.getLevel() + ")");
         }
     }
 
@@ -109,22 +94,10 @@ public class BotDecorateEquips {
 //    }
 
     private static void equipCapGloveShoes(Character fakechar) {
-        CompletableFuture<Integer> capFuture = CompletableFuture.supplyAsync(() -> getCapId(fakechar));
-        CompletableFuture<Integer> glovesFuture = CompletableFuture.supplyAsync(() -> getGlovesId(fakechar));
-        CompletableFuture<Integer> shoesFuture = CompletableFuture.supplyAsync(() -> getShoesId(fakechar));
-        CompletableFuture<Integer> capeFuture = CompletableFuture.supplyAsync(() -> getCapeId(fakechar));
-
-        CompletableFuture<Void> allEquips = CompletableFuture.allOf(capFuture, glovesFuture, shoesFuture, capeFuture);
-        allEquips.join();
-
-        try {
-            equipIfPresent(fakechar, capFuture.get());
-            equipIfPresent(fakechar, glovesFuture.get());
-            equipIfPresent(fakechar, shoesFuture.get());
-            equipIfPresent(fakechar, capeFuture.get());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        equipIfPresent(fakechar, getCapId(fakechar));
+        equipIfPresent(fakechar, getGlovesId(fakechar));
+        equipIfPresent(fakechar, getShoesId(fakechar));
+        equipIfPresent(fakechar, getCapeId(fakechar));
     }
 
     private static Integer getCapId(Character c) {
@@ -357,15 +330,12 @@ public class BotDecorateEquips {
 
         // Equip the chosen weapon(s)
         for (EquipType weaponType : possibleWeapons) {
-            //debugprint("Equipping wep to char: " + weaponType.toString());
-            int weaponId = getRandomEquipForWearing(weaponType, character);
-            BotCustomization.EquipBot(character, weaponId);
+            equipIfPresent(character, getRandomEquipForWearing(weaponType, character));
         }
 
         // Equip shield if needed
         if (useShield) {
-            Integer shieldId = getRandomEquipForWearing(EquipType.SHIELD, character);
-            BotCustomization.EquipBot(character, shieldId);
+            equipIfPresent(character, getRandomEquipForWearing(EquipType.SHIELD, character));
         }
     }
 }

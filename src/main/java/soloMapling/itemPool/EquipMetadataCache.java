@@ -242,6 +242,15 @@ public class EquipMetadataCache {
             return this;
         }
 
+        public EquipQuery nonCash() {
+            List<EquipEntry> filtered = new ArrayList<>();
+            for (EquipEntry e : source) {
+                if (!e.cash) filtered.add(e);
+            }
+            source = filtered;
+            return this;
+        }
+
         /** Filter to items matching the given bot gender (includes unisex). */
         public EquipQuery forGender(int gender) {
             List<EquipEntry> filtered = new ArrayList<>();
@@ -257,6 +266,30 @@ public class EquipMetadataCache {
             List<EquipEntry> filtered = new ArrayList<>();
             for (EquipEntry e : source) {
                 if (e.reqLevel <= maxLevel) filtered.add(e);
+            }
+            source = filtered;
+            return this;
+        }
+
+        /** Filter to items with minLevel <= reqLevel <= maxLevel (both inclusive). */
+        public EquipQuery levelBetween(int minLevel, int maxLevel) {
+            List<EquipEntry> filtered = new ArrayList<>();
+            for (EquipEntry e : source) {
+                if (e.reqLevel >= minLevel && e.reqLevel <= maxLevel) filtered.add(e);
+            }
+            source = filtered;
+            return this;
+        }
+
+        /**
+         * Filter to items whose reqJob equals the given value exactly.
+         * reqJob 0 means common/beginner gear, so unlike {@link #forJob(int)}
+         * those items only match when 0 is requested.
+         */
+        public EquipQuery forJobExact(int reqJob) {
+            List<EquipEntry> filtered = new ArrayList<>();
+            for (EquipEntry e : source) {
+                if (e.reqJob == reqJob) filtered.add(e);
             }
             source = filtered;
             return this;

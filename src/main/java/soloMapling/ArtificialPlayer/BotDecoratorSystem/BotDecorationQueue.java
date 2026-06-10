@@ -27,13 +27,13 @@ public class BotDecorationQueue {
     private static final Map<String, ConcurrentLinkedQueue<Integer>> queues = new ConcurrentHashMap<>();
     private static ScheduledExecutorService scheduler;
 
-    // How many bots to process per category per tick
-    private static final int BATCH_SIZE = 1;
-    // Time between decoration ticks (ms) - kept slow to minimize CPU impact;
-    // bots will eventually get dressed, no rush.
-    private static final long TICK_INTERVAL_MS = 2000;
+    // How many bots to process per category per tick. Decoration is an
+    // in-memory EquipMetadataCache lookup now, so the queue can drain fast.
+    private static final int BATCH_SIZE = 10;
+    // Time between decoration ticks (ms)
+    private static final long TICK_INTERVAL_MS = 250;
     // Delay before first tick after start (ms) - lets bots finish spawning
-    private static final long INITIAL_DELAY_MS = 15000;
+    private static final long INITIAL_DELAY_MS = 5000;
 
     /**
      * Queue a bot for deferred full decoration.

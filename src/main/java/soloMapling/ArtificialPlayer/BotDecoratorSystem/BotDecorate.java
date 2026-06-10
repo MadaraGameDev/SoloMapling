@@ -4,6 +4,7 @@ import client.Character;
 import client.Job;
 import client.inventory.InventoryType;
 import soloMapling.ArtificialPlayer.BotTier;
+import soloMapling.itemPool.EquipMetadataCache;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -12,9 +13,10 @@ import java.util.concurrent.ThreadLocalRandom;
 public class BotDecorate {
 
     /**
-     * Fraction of bots that get queued for the full (expensive) decoration pass.
-     * The rest keep only their QuickEquip generic/classless outfit - visually
-     * distinct and much cheaper. Tune to taste while experimenting.
+     * Fraction of bots that get the full class-aware decoration pass.
+     * The rest keep only their QuickEquip generic/classless outfit so the
+     * population reads as a mix of casual and kitted-out players.
+     * Tune to taste while experimenting.
      */
     public static final double FULL_DECORATION_RATE = 0.5;
 
@@ -266,31 +268,40 @@ public class BotDecorate {
 
         BotDecorateBody.decorateBotBody(bot);
 
-        // Quick generic equip at spawn - fast, tiny curated list, no WZ lookups.
-        // 100% of bots go through this path.
-        QuickEquip.apply(bot);
-
-        // Safety net: if QuickEquip left the bot with no clothing (common for
-        // low-level bots where the curated pool has no matching items), force
-        // the full decoration so they don't walk around shirtless.
-        boolean hasClothing = bot.getInventory(InventoryType.EQUIPPED).getItem((short) -5) != null  // coat/overall
-                           || bot.getInventory(InventoryType.EQUIPPED).getItem((short) -6) != null; // pants
-        if (!hasClothing) {
-            BotDecorationQueue.addBot("default", bot.getId());
+        if (EquipMetadataCache.isInitialized()) {
+            // Full class-aware decoration is an in-memory cache lookup now, so it
+            // runs inline at spawn. FULL_DECORATION_RATE preserves the population
+            // mix of "kitted out" (full decoration) and "casual" (QuickEquip) bots.
+            if (ThreadLocalRandom.current().nextDouble() < FULL_DECORATION_RATE) {
+                BotDecorateEquips.decorateBotEquips(bot);
+            } else {
+                QuickEquip.apply(bot);
+                // Safety net: if QuickEquip left the bot with no clothing (common
+                // for low-level bots where the curated pool has no matching items),
+                // run the full decoration so they don't walk around shirtless.
+                if (!hasClothing(bot)) {
+                    BotDecorateEquips.decorateBotEquips(bot);
+                }
+            }
+        } else {
+            // Cache not ready (bots spawned before environment init): quick
+            // generic equip now, full decoration deferred to the queue.
+            QuickEquip.apply(bot);
+            if (!hasClothing(bot)
+                    || ThreadLocalRandom.current().nextDouble() < FULL_DECORATION_RATE) {
+                BotDecorationQueue.addBot("default", bot.getId());
+            }
         }
 
         // NX cosmetic layer - runs on every bot regardless of which equip path
-        // it took (QuickEquip-only or QuickEquip + full decoration). Its own
-        // 30% base gate decides whether the bot actually gets any NX pieces.
+        // it took. Its own 30% base gate decides whether the bot actually gets
+        // any NX pieces.
         BotDecorateNX.apply(bot);
+    }
 
-        // Only a fraction of bots get queued for the expensive class-aware full
-        // decoration. The rest keep their generic/classless QuickEquip look,
-        // which gives the population a distinct mix of "casual" and "kitted out"
-        // bots and keeps CPU cost bounded when the queue is running.
-        if (hasClothing && ThreadLocalRandom.current().nextDouble() < FULL_DECORATION_RATE) {
-            BotDecorationQueue.addBot("default", bot.getId());
-        }
+    private static boolean hasClothing(Character bot) {
+        return bot.getInventory(InventoryType.EQUIPPED).getItem((short) -5) != null  // coat/overall
+                || bot.getInventory(InventoryType.EQUIPPED).getItem((short) -6) != null; // pants
     }
 
     /**
