@@ -1,6 +1,6 @@
 Free Market & Item Pool Architecture
 =====================================
-Last Updated: 2026-05-25
+Last Updated: 2026-06-12
 Covers: soloMapling/FreeMarket/ (21 files) + soloMapling/itemPool/ (16 files, 13 YAMLs)
 
 
@@ -70,8 +70,10 @@ Both paths converge on:
     |   |     generateShop(merchant, Job)
     |   |       -> generateEquipListByClassType(jobType, tier)
     |   |           -> generateEquipList(yamlFile, equipCategories, tier)  [EquipListGenerator]
-    |   |               -> generatePattern(tier) -> selectEquipCategoriesByPattern()
-    |   |               -> For each category: getRandomItemFull() -> pick item -> scroll -> price
+    |   |           |   -> generatePattern(tier) -> selectEquipCategoriesByPattern()
+    |   |           |   -> For each category: getRandomItemFull() -> pick item -> scroll -> price
+    |   |           -> generateEquipListIIPU(tier, job)  [adds up to 4 WZ-sourced equips
+    |   |               via EquipMetadataCache; level range derived from tier]
     |   |
     |   +-- Item shops (Scroll/DarkScroll/Potion/ETC/Mastery/Chair):
     |         repeatAction(N, () -> generateSecondaryShop(merchant, type))
@@ -229,8 +231,13 @@ ITEM DATABASE (ItemDatabase.java):
 
 EQUIP METADATA CACHE (EquipMetadataCache.java):
   One-time WZ scan that caches reqLevel, reqJob, gender, cash flag for all equips.
+  Loaded during Server.init() alongside the other WZ-derived data (with DesirableEquipList),
+  so it's guaranteed ready before any player can trigger the bot environment startup.
   Provides fluent query API: query(EquipType).cashOnly().forGender(0).maxLevel(70).
-  Not currently used by shop generation (available for future use).
+  Used by:
+    - Shop generation: generateEquipListIIPU() pulls WZ-sourced equips from the cache
+      (re-enabled June 2026 — the old WZ-read implementation was disabled for being too slow)
+    - Bot decoration: BotDecorateEquips/BotDecorate run entirely off the cache (no WZ reads at spawn)
 
 
 =====================================
@@ -432,15 +439,16 @@ FMBot behavior (FMBot.java):
 =====================================
 
 BUGS:
-  [CRITICAL] EquipListGenerator.getLevelOnTier() (line 239) uses == instead of .equals()
-    for String comparison. Currently DORMANT because the method is only called by
-    generateEquipListIIPU() which is commented out. Will break if IIPU path is re-enabled.
+  [x] FIXED: EquipListGenerator.getLevelOnTier() previously used == instead of .equals()
+    for String comparison. Now uses "S".equals(tier) style — safe with the re-enabled IIPU path.
 
-  [MAJOR] S-TIER ITEM GAP: At itemPoolVersion=55, class equipment YAMLs (warrior, mage,
+  [MAJOR, MITIGATED] S-TIER ITEM GAP: At itemPoolVersion=55, class equipment YAMLs (warrior, mage,
     bowman, common) have no S-tier items. Their S-tier entries cap at version 18.
     Only thief, darkscrolls, chair, and etc have S-tier items at v55.
-    Result: ~53% of shops (class-type) assigned S-tier cannot find S-tier items,
-    producing thin/empty equip lists despite the tier label.
+    YAML-sourced S-tier equips still silently skip, but the re-enabled IIPU path now
+    supplements every class shop with up to 4 WZ-sourced equips from EquipMetadataCache,
+    so S-tier shops are no longer thin/empty. The YAML gap itself remains (S-tier shops
+    carry few YAML-priced S items).
 
 INCOMPLETE:
   - ScrollInfoManager: Only ~10 equip types have scroll mappings (TODOs at lines 83-84)
@@ -452,7 +460,9 @@ INCOMPLETE:
   - Pirate shop type: Currently generates Common equipment (placeholder)
 
 PERFORMANCE:
-  [x] generateEquipListIIPU() was disabled ("VERY LONG LOAD") at ArtificialShopGenerator line 156.
-    When active, it added WZ-sourced equips alongside YAML equips per shop.
+  [x] generateEquipListIIPU() re-enabled (June 2026). The old implementation read WZ data per call
+    ("VERY LONG LOAD") and was disabled; it now queries the in-memory EquipMetadataCache, which is
+    loaded once during Server.init(), so it adds WZ-sourced equips alongside YAML equips per shop
+    with negligible cost.
   - ItemSelector re-parses YAML from disk on every getRandomItemFull() call.
     Could be cached, but hasn't been a bottleneck.

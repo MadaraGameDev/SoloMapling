@@ -24,3 +24,7 @@ database/docker-pg-db-data
 
 # macOS files
 .DS_Store
+BotLog.txt
+CLAUDE.md
+memory/MEMORY.md
+memory/no-auto-commits-solomapling.md

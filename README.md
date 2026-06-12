@@ -1,160 +1,158 @@
-﻿# SoloMapling
+# SoloMapling
 
-This marks the very base of SoloMapling. The latest commit by Cosmic is on Feb 3rd, 2026 - fec53bc7714dc0f1ae3f50b2986cdf2727e0912a
-Going Forward will be SoloMapling related files
+An artificial player simulation framework for MapleStory v83, built on the [Cosmic](https://github.com/P0nk/Cosmic) server emulator. Spawns hundreds of autonomous bots that populate the game world — wandering towns, running shops, playing minigames, chatting, and interacting with real players as if they were real.
 
-# Cosmic
-Cosmic is a server emulator for Global MapleStory (GMS) version 83.
+The framework is purely server-side — no client modifications required. Bots are real character objects in the game engine, indistinguishable from player-controlled characters at the network level.
 
-## Introduction
+## Documentation
 
-Cosmic launched on March 2021. It is based on code from a long line of server emulators spanning over a decade - starting with OdinMS (2008) and ending with HeavenMS (2019).
+| Document | What it covers |
+|----------|----------------|
+| [Claude Summary](src/main/java/soloMapling/Documents/Claude%20Summary.txt) | Full architecture overview — every subsystem, design patterns, concurrency model |
+| [Artificial Player Framework Architecture](src/main/java/soloMapling/Documents/Artificial%20Player%20Framework%20Architecture.md) | Deep dive on the bot framework — identity, lifecycle, state machine, decoration pipeline, extension guide |
+| [Dev Commands Cheat Sheet](src/main/java/soloMapling/Documents/Dev%20Commands%20Cheat%20Sheet.md) | All in-game GM dev commands (`!bot`, `!move`, `!env`, `!opq`, …) |
+| [FreeMarket and ItemPool Architecture](src/main/java/soloMapling/Documents/FreeMarket%20and%20ItemPool%20Architecture.txt) | Shop generation pipeline, tier/version system, economy engine, haggling |
+| [Environment and World Startup](src/main/java/soloMapling/Documents/Environment%20and%20World%20Startup.md) | 7-wave world initialization, spawn choreography, platform system, casino setup |
+| [Logging and Observability](src/main/java/soloMapling/Documents/Logging%20and%20Observability.md) | BotLog, debug utilities, the in-game MMC operator console, queue/event monitors |
+| [Cosmic README](Cosmic_README.md) | The original readme for the underlying Cosmic server emulator |
 
-This is mainly a Java based project, but there are also a bunch of scripts written in JavaScript.
+## Why
 
-Head developer and maintainer: __Ponk__.\
-Contributors: a lot of people over the years, and hopefully more to come. Big thanks to everyone who has contributed so far!
+Private servers feel dead without players, and players don't stay on dead servers. SoloMapling breaks that cycle by filling the world with bots that look, move, trade, chat, and play like real people. Every bot has its own appearance, equipment, level, personality, and behavioral loop. From a player's perspective, the server just looks alive.
 
-Join the Discord server where most of the discussions take place: https://discord.gg/JU5aQapVZK
+## What It Does
 
-### Goals
-What we are working towards.
-* __Vanilla gameplay__ - stay as close to the original game as possible (within reason).
-* __Ease of use__ - getting started should be frictionless and contributing to the project straightforward.
-* __Reduce technical debt__ - making changes should be easy without causing unintended side effects.
-* __Modern tools & technologies__ - stay appealing by continuously improving the code and the project as a whole. 
+Bots don't just stand around — they:
 
-### Non-goals
-Explicitly excluded from the scope of the project.
-* __Custom gameplay features__ - existing custom features will be removed over time and new ones are unlikely to be added.
-* __Client development__ - this project is focused on the server. Please go elsewhere for client related questions.
-* __Public server__ - there will not be an official Cosmic server open to the public. Feel free to launch your own server __at your own risk__. No support will be provided.
+- **Populate towns** — Henesys bots wander between Main, Market, Park, and Pet Park. Filler bots sit on benches, stand at shops, and chat with each other. Social bots hold conversations and react to players who approach them.
+- **Run the Free Market** — Merchant bots operate Hired Merchants and Player Shops across Henesys, Ludibrium, Perion, and Elnath FM rooms with procedurally generated inventories and dynamic pricing.
+- **Host minigames** — Blackjack tables with AI dealers, drop-item racing games with tiered entry fees, dice games, and Gachapon machines with reactor-based prize sprays.
+- **Simulate social life** — Ambient chat system (SocialHotPotatoManager) fires off contextual dialogue, emotes, megaphones, and chalkboard messages. Multi-bot conversations (ConversationManager) detect nearby bot clusters and play scripted dialogue with proper timing and emotes.
+- **Attempt jump quests** — JQ bots in Pet Park replay pre-recorded movement attempts at weighted difficulty tiers, fail/succeed realistically, chat about their progress, and convert back to town bots when done.
+- **Run party quests** — OPQ (Orbis Party Quest) bots recruit, party up, navigate stages, attack cloud reactors, and complete objectives via a centralized orchestrator.
+- **Onboard new players** — A Tutorial Bot on Maple Island greets newcomers, offers admin powers (GM level 6, Night Lord, starter gear, NX code), teaches chat mechanics, upgrades their weapon, and escorts them to the exit.
+- **Scroll and trade** — Scrolling bots use scrolls on items and react via the event bus. Trade bots handle full 9-state trade lifecycles with fair pricing logic.
 
-## Project setup
+## Architecture at a Glance
 
-### Contribute
-You may contribute to the project in various ways, mainly through GitHub:
-* Providing improvements to the code through a [Pull Request](https://github.com/P0nk/Cosmic/pulls) from your own fork. 
-* Reporting a bug by creating an [Issue](https://github.com/P0nk/Cosmic/issues).
-* Providing information to existing issues or reviewing pull requests that others have made.
-* ...and in other ways that I haven't thought of!
+Everything revolves around **BotSM** (Bot State Machine) — an abstract FSM ticked every 2-6 seconds with adaptive speed (faster when players are nearby). Fifteen bot types extend it, each with their own state machine and behavioral loop. Adding a new bot personality means extending one base class and overriding the update loop. Configuration is YAML-driven — dialogue lines, item pools, movement recordings, and pricing all live in data files rather than hardcoded logic.
 
-### Continuous integration
-A GitHub Actions pipeline is set up to run the build automatically when a new pull request is opened or commits are pushed to an existing one. This ensures that the code compiles and all the tests pass.
+### Bot Types
 
-Once a pull request is merged, a tag with the new version is automatically created.
+| Bot | What It Does |
+|-----|-------------|
+| FMBot | Free Market wanderer, shops and trades |
+| HenesysBot | Town wanderer across 4 Henesys maps via portals |
+| HenesysJQBot | Jump quest attempts with tier-weighted difficulty progression |
+| SocialBot | Interactive NPC with dialogue trees and anti-spam escalation |
+| ScrollingBot | Scrolls items, reacts to results via EventBus |
+| GachaBot | Operates Gachapon with reactor VFX prize sprays |
+| DiceBot | Dice-rolling social game |
+| TutorialBot | 18-state onboarding flow with admin grant and item trade |
+| SellingMerchantBot | Runs Hired Merchants selling items |
+| BuyingMerchantBot | Purchases items from players |
+| NXMerchantBot | Cash Shop item specialist |
+| GameZoneHostBot | Hosts game zone events |
+| BlackjackDealerBot | Full blackjack table with AI strategy |
+| DropGameBot | 8-state drop racing minigame with tiered loot |
+| OPQBot | Orchestrated Orbis Party Quest participant |
 
-### Discord integration
-Most GitHub activity is pushed to a Discord channel for visibility. This works by leveraging a webhook. The activity includes (but is not limited to): merged commits, created PRs, comments, and new tags.
+### Key Subsystems
 
-### Versioning
-The project follows the [semantic versioning](https://semver.org/) scheme using git tags.
-* *Bug fixes* are treated as PATCH: 1.2.__3__ -> 1.2.__4__
-* *General changes or improvements* are treated as MINOR: 1.__2__.3 -> 1.__3.0__
-* *Major changes* are treated as MAJOR: __1__.2.3 -> __2.0.0__
+- **Movement** — Three modes: replay from 825+ pre-recorded movement files, JGraphT Dijkstra pathfinding (ground/aware/aerial variants), and portal-based cross-map navigation.
+- **Decoration** — Procedural appearance generation, driven entirely by an in-memory equip metadata cache (no WZ reads at spawn time). Tier system (S/A/B/C/D) controls gear quality. Bots arrive fully dressed: body + quick generic equips at spawn, full class-aware decoration deferred to a background queue. Three layers: body (face/hair/skin), equips (job-specific), NX overlay (20% gate, tier-scaled intensity).
+- **Free Market** — Four FM regions with economy simulation. Regional multipliers, entrance premiums, day-of-week modifiers, procedural shop inventories.
+- **Trade** — 9-state sub-FSM handling the full trade lifecycle with fair pricing evaluation.
+- **Social Simulation** — SocialHotPotatoManager (ambient actions every 8-20s) + ConversationManager (scripted multi-bot dialogues every 60-120s with spatial cluster detection).
+- **Event Bus** — Decoupled pub/sub system. Bots subscribe to game events (LEVEL_UP, SCROLL, MAP_ENTERED, etc.) filtered by world/channel/map.
+- **Dialogue** — YAML-driven per-bot dialogue with randomized selection, emote IDs, timing, and variable substitution. 15 dialogue files.
+- **Item Pool** — YAML-driven item registry with per-class configs, scroll metadata, upgrade simulation, and weighted selection.
+- **Party System** — Full party lifecycle for OPQ and DropGameBot.
+- **Environment** — 7-wave phased world startup; waves run their tasks in parallel and block until complete (~650 bots in roughly 10 seconds).
 
-## Getting started
-Follow along as I go through the steps to play the game on your local computer from start to finish. I won't go into extreme detail, so if you don't have prior experience with Java or git, you might struggle.
+## World Startup (7 Waves)
 
-We will set up the following:
-- Database - the database is used by the server to store game data such as accounts, characters and inventory items.
-- Server - the server is the "brain" and routes network traffic between the clients.
-- Client - the client is the application used to _play the game_, i.e. MapleStory.exe.
+The world populates in phases to keep startup stable and observable:
 
-### 1 - Database 
-You will start by installing the database server and database client. Then you will connect to the server with the client to create a new database schema.
+1. **Essentials** — Casino NPCs, Tutorial Bot, 10 Henesys wanderers, Henesys FM
+2. **FM Buildout** — Ludi FM, merchant bots, gacha bots
+3. **Henesys Population** — JQ bots, more wanderers, filler bots; social simulation systems start
+4. **Expand FM** — Perion FM, more merchants, Market fillers
+5. **Sub-areas** — Elnath FM, Park/Potion Shop/Game Zone fillers + hosts
+6. **Specialty** — Blackjack tables, Drop Game + spectators, Pet Park social bots, scroll bot conversions
+7. **Late Arrivals** — OPQ lobby bots, final merchant batch
 
-#### Steps
+After the waves, the deferred decoration queue and a periodic equip checker start. Bot spawn animations (portal drop-down, turn-around) play asynchronously on virtual threads so mass spawning never blocks on choreography.
 
-1. Download and install [MySQL Community Server 8+](https://dev.mysql.com/downloads/mysql/). You will have to set a root password. Make sure you don't lose it because you will need it later.
-2. Download and install [HeidiSQL](https://www.heidisql.com/download.php).
-3. Connect to the database: 
-   1. Open HeidiSQL
-   2. Create a new Session: "New" -> fill in your password -> "Save"
-   3. Connect to the database: click on your saved session -> "Open"
-4. Create a new database schema:
-   1. In the opened session, right-click on the session name in the menu on the left
-   2. "Create new" -> "Database" -> database name should be "cosmic" -> "OK"
-5. Done. The database is now ready. Once the Cosmic server starts, it will create tables and populate some of them with initial data.
+## Dev Commands
 
-### 2 - Server
-You will start by cloning the repository, then configure the database properties and lastly start the server.
+Nine GM-level-4 command suites for testing and control. All have `help` subcommands.
 
-#### Prerequisites
-* Java 21 (I recommend [Amazon Corretto](https://aws.amazon.com/corretto))
-* IDE (I recommend [IntelliJ IDEA](https://www.jetbrains.com/idea/))
+| Command | Purpose |
+|---------|---------|
+| `!bot` | Bot lifecycle, type assignment, loot, appearance, party, chat |
+| `!move` | Movement, pathfinding, recording, chairs, interrupts |
+| `!betafmshop` | Free Market population and shop management |
+| `!env` | World init, filler bots, NPCs, platforms, social systems |
+| `!fmbot` | FM-bot-specific (mostly stubs) |
+| `!tradebot` | Trade FSM driving and inspection |
+| `!test` | Reactors, VFX, events, gacha, messenger |
+| `!opq` | OPQ orchestration and lifecycle |
+| `!reactor` | Reactor inspection and bot-attack testing |
 
-#### Steps
+Full reference: [Dev Commands Cheat Sheet](src/main/java/soloMapling/Documents/Dev%20Commands%20Cheat%20Sheet.md)
 
-1. Clone Cosmic into a new project. In IntelliJ, you would create a new project from version control.
-2. Open _config.yaml_. Find "DB_PASS" and set it to your database root user password.
-3. Start the server. The main method is located in `net.server.Server`.
-4. If you see "Cosmic is now online" in the console, it means the server is online and ready to serve traffic. Yay!
+## Relationship to Cosmic
 
-Below, I list other ways of running the server which are completely optional.
+[Cosmic](https://github.com/P0nk/Cosmic) handles all the foundational game logic — client networking, packet handling, map loading, NPC scripts, quests, combat, and persistence. SoloMapling is a layer built on top that uses Cosmic's character and map systems to inject autonomous bot behavior.
 
-#### Docker
-Support for Docker is also provided out of the box, as an alternative to running straight in the IDE. If you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed it's as easy as running `docker compose up`.
+The SoloMapling code lives primarily in its own package (`soloMapling/`) with minimal modifications to the Cosmic base — mainly hook points for bot registration, command dispatching, and event observation. The original Cosmic readme is preserved at [Cosmic_README.md](Cosmic_README.md).
 
-Making changes becomes a bit more tedious though as you have to rebuild the server image via `docker compose up --build`.
+## Requirements & Setup
 
-#### Jar
-Another option is to start the server from a terminal by running a jar file. You first need to build the jar file from source which requires [Maven](https://maven.apache.org/). Fortunately, [Maven Wrapper](https://maven.apache.org/wrapper/) is provided so you don't have to install Maven separately.
+- Java 21 (Amazon Corretto recommended)
+- MySQL 8+
+- MapleStory v83 WZ XML files (in `wz/` directory)
+- Maven for building
 
-Building the jar file is as easy as running ``./mvnw.cmd clean package``. The project is configured to produce a "fat" jar which contains all dependencies (by utilizing the _maven-assembly-plugin_). Note that the WZ XML files are __not__ included in the jar.
+1. Follow the standard [Cosmic setup](https://github.com/P0nk/Cosmic) for database and client configuration.
+2. Configure `config.yaml` with your database credentials.
+3. Build: `mvn clean package`
+4. Run: `launch.bat` (Windows) or via IDE with main class `net.server.Server`.
 
-To run the jar, a ``launch.bat`` file is provided for convenience. Simply double-click it and the server will start in a new terminal window. 
+The SoloMapling environment starts automatically on server boot and populates the world with bots. The first real player that logs in after a fresh server start must re-log (5-second detour) because the bots need a Client address to use. There is currently no workaround for this.
 
-Alternatively, run the jar file from the terminal. Just remember to provide the `wz-path` system property pointing to your wz directory.
+## Project Structure
 
-### 3 - Client
-The client files are located in a separate repository: https://github.com/P0nk/Cosmic-client
+```
+src/main/java/
+  soloMapling/            <- SoloMapling framework
+    ArtificialPlayer/     <- Bot state machines, types, movement, trade, party, commands
+      BotTypes/           <- 15 concrete bot implementations + Blackjack/ and OPQ/ subsystems
+      BotMovementSystem/  <- Movement replay, pathfinding, navigation, recording
+      BotTradeSystem/     <- 9-state trade FSM, inventory, pricing
+      BotMessagingSystem/ <- Async pub/sub message broker, character storage
+      BotCommandsPack/    <- 7 command packs (social, megaphone, drop, warp, VFX, messenger, attack)
+      BotPartySystem/     <- Party lifecycle management
+      BotDecoratorSystem/ <- Procedural appearance generation (body, equips, NX, decoration queue)
+      BotDialoguePack/    <- 15 YAML dialogue files + drop game loot pool
+    Casino/               <- Casino chip system and WZ patching
+    Environment/          <- World initialization, platform system
+    FreeMarket/           <- FM economy simulation, shop generation, haggling
+    MapVFX/               <- Reactor-based visual effects
+    itemPool/             <- YAML-driven item registry, scroll system, equip metadata cache
+    server/               <- Utilities, event bus, executor management, NX codes
+    Documents/            <- Architecture notes and design documents
+  client/                 <- Cosmic base (client handling, GM commands)
+  net/                    <- Cosmic base (networking)
+  server/                 <- Cosmic base (game logic)
+```
 
-Follow the installation guide in the README.
+## Tech Stack
 
-### 4 - Getting into the game
-You have successfully started the client, and you're looking at the login screen. 
-
-#### Logging in
-At this point, you can log in to the admin account using the following credentials:
-* Username: "admin"
-* Password: "admin"
-* Pin: "0000"
-* Pic: "000000"
-
-You can also create a new regular account by typing in your desired username & password and attempting to log in. This "automatic registration" feature lets you create new accounts to play around with. It is enabled by default (see _config.yaml_).
-
-#### Entering the game
-Create a new character as you normally would, and then select it to enter the game. Hooray, finally we're in!
-
-If you log in to the "Admin" character, you'll notice that the character looks almost invisible. This is hide mode, which is enabled by default when you log in to a GM character. You won't be visible to normal players and no mobs will move if you're alone on the map. Toggle hide mode on or off by typing "@hide" in the in-game chat.
-
-Hide is one of many commands available to players, type "@commands" to see the full list. Higher ranked GMs have access to more powerful commands.
-
-That's it, have fun playing around in game! 
-
-## Advanced concepts
-Some slightly more advanced concepts that might be useful once you're up and running.
-
-### Host on remote server
-You don't have to host the server on your local machine to play. It's possible to host on a remote server such as a VPS or a dedicated server.
-
-I leave it to you to figure out the server hosting part, but once you have that running you'll need to edit the client ip to point to your remote server ip.
-
-### WZ files
-WZ files are the asset/data files required by the client and server. Typically, the [HaRepacker-resurrected](https://github.com/lastbattle/Harepacker-resurrected) tool is used to manage (view, edit, export) the .wz files.
-
-The client can read the .wz files directly, but the server requires them to be in XML format. The server does not make use of the sprites, which is the motivation for different kinds of exporting. 
-HaRepacker allows you to export to "Private server", which is the .img files packaged in the .wz stripped of sprites and converted to XML. This takes much less disk space.
-
-This server requires custom .wz files (unfortunately), as you may have noted during installation of the client. The intention is for these to be removed eventually and to solely run on vanilla .wz files.
-
-#### WZ editing
-* Use the HaRepacker-resurrected editor, encryption "GMS (old)".
-* Open the desired .wz for editing and use the node hierarchy to make the desired changes (copy/pasting nodes may be unreliable in rare scenarios).
-* Save the changed .wz, overwriting the original content at the client folder.
-* Finally, re-export (using the "Private Server" exporting option) the changed XMLs into the server's .wz XML files (found in the "wz" directory), overwriting the old contents.
-
-Make sure to always export from the client .wz files to the server XML, and not the other way around. 
-
-Editing the client .wz without exporting to the server may lead to strange behavior.
+- **Java 21** (Amazon Corretto) on **Cosmic** MapleStory v83 server emulator
+- **Maven** build with fat jar assembly
+- **MySQL 8+** for persistence
+- **JGraphT** for pathfinding graph algorithms
+- **YAML** for all configuration data (dialogue, items, equips, versions)
+- Movement replay from pre-recorded binary/CSV packet data

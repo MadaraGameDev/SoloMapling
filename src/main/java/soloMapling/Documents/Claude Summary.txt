@@ -1,5 +1,5 @@
   ---
-  SoloMapling — Architecture Overview (updated May 2026)
+  SoloMapling — Architecture Overview (updated June 2026)
 
   What It Is
 
@@ -57,9 +57,24 @@
 
   2. Bot Decoration & Tier System (BotDecoratorSystem/)
   Procedurally generates each bot's appearance, level, and equipment based on a weighted tier assignment (S/A/B/C/D).
-  S-tier bots are elite with high-level gear; D-tier bots are scrubs. Three decoration layers:
+  S-tier bots are elite with high-level gear; D-tier bots are scrubs.
+
+  All equip selection is driven by EquipMetadataCache (itemPool/) — a one-time WZ scan performed during
+  Server.init() that indexes reqLevel/reqJob/gender/cash metadata for every equip. Decoration is therefore
+  an in-memory lookup (microseconds); no WZ file reads happen at spawn time.
+
+  Two-phase decoration:
+     Phase 1 — at spawn (synchronous, inside createBot): tier + level + body are assigned and QuickEquip
+       dresses the bot from a tiny curated GenericEquipPool (clothing > weapon > cap > shoes > cape/gloves,
+       equip chance scales by tier: S 90% ... D 15%). Bots arrive on the map fully dressed.
+     Phase 2 — deferred (BotDecorationQueue): after environment startup, a background scheduler drains
+       categorized queues (10 bots per category per 250ms tick, categories in parallel) applying the full
+       class-aware decoration pass. Only ~50% of bots get the full pass (FULL_DECORATION_RATE) — the rest
+       keep their QuickEquip outfit so the population reads as a mix of casual and kitted-out players.
+
+  Decoration layers:
      - BotDecorateBody — face, hair, skin color
-     - BotDecorateEquips — weapons, armor, accessories based on job path + tier
+     - BotDecorateEquips — weapons, armor, accessories based on job path + tier (metadata-cache queries)
      - BotDecorateNX — Cash Shop overlay items with a multi-stage decision tree:
        * 20% base chance gate (only 1 in 5 bots get NX cosmetics at all)
        * Tier-based intensity: S-tier rolls 2-5 NX items, D-tier gets 1
@@ -67,7 +82,7 @@
        * Special rules: 40% weapon opt-out, 75/25 overall vs top+bottom split for clothing
        * Separate 2-5% ring layer (tier-dependent, not counted in intensity)
   Supporting logic: EquipDecoratorRules, JobPathLogic, CosmeticTier, GenericEquipPool.yaml, NXItemPool.yaml.
-  BotDecorationQueue manages asynchronous decoration application with MMC toggle control.
+  BotEquipChecker runs every 2 minutes as a safety net, re-dressing any bot found naked.
 
   3. Movement & Navigation (BotMovementSystem/)
   Possibly the most technically impressive piece. Three movement modes:
@@ -114,7 +129,8 @@
      - GachaFillerSystem — generates gacha prize filler lists for VFX prize sprays
      - ItemQuantityConfig — controls stack sizes and drop quantities
      - UniqueStatBonusList — special stat bonuses for rare items
-     - EquipMetadataCache — caches equipment metadata for fast lookup
+     - EquipMetadataCache — one-time WZ scan at Server.init() caching reqLevel/reqJob/gender/cash for all
+       equips; powers bot decoration and the IIPU shop equip path (fluent query API)
 
   7. Chat & Messaging (BotMessagingSystem/)
   An async pub/sub message broker with three independent queues (PRIMARY/SECONDARY/TERTIARY). CharacterStorage acts as a
@@ -135,12 +151,12 @@
 
   9. Dialogue System (BotDialogueHandler, BotCommandsPack/)
   YAML-driven dialogue with randomized line selection, emote IDs, timing, and variable substitution (%RESP_NAME,
-  %CHR_NAME, %WPN_NAME, %NX_CODE). Fourteen per-bot-type dialogue files:
+  %CHR_NAME, %WPN_NAME, %NX_CODE). Fifteen per-bot-type dialogue files (plus DropGameLootPool.yaml):
      - BlackjackDealerBotDialogue.yaml, ConversationDialogue.yaml, DropGameBotDialogue.yaml
-     - DropGameLootPool.yaml, FMBotDialogue.yaml, GameZoneHostBotDialogue.yaml
+     - DropGameSpectatorDialogue.yaml, FMBotDialogue.yaml, GameZoneHostBotDialogue.yaml
      - HenesysBotDialogue.yaml, JQBotDialogue.yaml, MegaphoneDialogue.yaml
-     - MerchantBotDialogue.yaml, ScrollingBotDialogue.yaml, SocialBotDialogue.yaml
-     - SocialHotPotatoDialogue.yaml, TutorialBotDialogue.yaml
+     - MerchantBotDialogue.yaml, ScrollingBotDialogue.yaml, ShopOfferDialogue.yaml
+     - SocialBotDialogue.yaml, SocialHotPotatoDialogue.yaml, TutorialBotDialogue.yaml
 
   Seven command packs:
      - SocialCommands — chat, chat bubbles, chat hints, emotes, displayPlayerChatCommands
@@ -152,25 +168,35 @@
      - BotAttack — melee swing animations (used for reactor hitting in OPQ)
 
   10. Environment Manager (Environment/)
-  Handles multi-phase world initialization via a 7-wave phased startup with 1-second delays between waves:
+  Handles multi-phase world initialization via a 7-wave phased startup. Each wave runs its tasks in
+  parallel and blocks until the wave completes (runWave/runPhase), with per-wave timing + bot-count
+  logging. Full startup: ~650 bots in roughly 10 seconds.
 
      Wave 1 — Essentials: Casino NPCs, Tutorial Bot (Maple Island), Henesys wanderers (10), Henesys FM region,
               first FM entrance batch
      Wave 2 — FM Buildout: Ludi FM, second FM entrance batch, first merchant bot batch (selling/buying/NX
-              across rooms m1/m2/m5), Gacha bots (3)
-     Wave 3 — Henesys Population: More wanderers (10/10/0/5 social), Henesys filler bots,
-              START SocialHotPotatoManager and ConversationManager
-     Wave 4 — Expand FM: Perion + Elnath FM, third FM entrance batch, second merchant batch,
+              across platforms m1/m2/m5), Gacha bots
+     Wave 3 — Henesys Population: JQ bots (Pet Park), more wanderers (10/10/0/5 social), Henesys filler bots;
+              then START SocialHotPotatoManager and ConversationManager
+     Wave 4 — Expand FM + Henesys Market: Perion FM, third FM entrance batch, second merchant batch,
               Henesys Market fillers
-     Wave 5 — Sub-areas: More wanderers (10/10/10/4), Park/Potion Shop/Game Zone fillers,
-              Game Zone host bots (2)
-     Wave 6 — Specialty: Blackjack tables (5), Drop Game Bot, JQ bots (15 in Pet Park),
-              Pet Park social bots (14), scroll bot conversions
-     Wave 7 — Late Arrivals: OPQ lobby bots, final merchant batch, BotDecorationQueue.start()
+     Wave 5 — Henesys sub-areas: Elnath FM, more wanderers (10/10/10/4), Park/Potion Shop/Game Zone fillers,
+              Game Zone host bots
+     Wave 6 — Specialty: Blackjack tables, Drop Game Bot + Drop Game spectators (Potion Shop),
+              Pet Park social bots, scroll bot conversions
+     Wave 7 — Late Arrivals: OPQ lobby bots, final merchant batch
+     After waves: BotDecorationQueue.start() + BotEquipChecker.start()
+
+  Spawn choreography (BotGeneration): createBot places the bot, decorates it immediately (in-memory cache
+  lookup), then plays the arrival animation (portal drop-down -> optional turn-around) on a virtual thread
+  and returns in ~20ms — mass spawning is never gated on animations. SPAWN_CHOREOGRAPHY_MAX_MS (7s) bounds
+  the choreography window; anything that must visually wait for a bot to land (first FSM tick at 7-10s,
+  FM shop opening, chair sits, facing adjustments) schedules past it. warpBotToLocation keeps blocking
+  semantics for callers that need strict ordering (OPQ map transitions, GM commands).
 
   Platform system ensures bots spawn on valid footholds and don't cluster:
      - Platform.java — foothold/platform data structure with boundary coordinates
-     - PlatformParser.java — reads platform definitions from map data
+     - PlatformParser.java — builds platform definitions from movement-recording CSVs (auto-detects FLAT vs SLOPED)
      - PlatformSpawner.java — places bots on valid footholds
      - EnvironmentManager — orchestrates spawn phases, platform queries, NPC spawning
 
@@ -230,6 +256,11 @@
      Cleanup: Party disbanded, drop scheduler stopped
   Uses custom trade flow (not standard BotTradeSM), BotPartyCommands, and movement recording playback.
 
+  DropGameSpectatorSystem — ambient hype layer for drop games. Spectator bots near the drop game react
+  every 7-12 drops with weighted dialogue (Excitement 30% / Envy 20% / Hype 20% / Question 15% / Cheer 15%),
+  referencing the actual dropped item by name. Lines from DropGameSpectatorDialogue.yaml. Spectators are
+  spawned in Wave 6 alongside the Drop Game Bot.
+
   16. OPQ Rush System (BotTypes/OPQ/)
   Multi-phase Orbis Party Quest simulation. The most complex bot orchestration in the project:
      - OPQOrchestrator (singleton) — manages PQ lifecycle, phase transitions, bot registration
@@ -247,7 +278,9 @@
   Casino infrastructure for chip-based gambling:
      - CasinoChipConfig — chip denominations, NPC IDs, exchange rates
      - WzXmlPatcher — patches WZ XML data for casino NPC setup
-  NPCs spawned via EnvironmentManager on dedicated casino maps.
+     - scripts/npc/9000055.js — Casino Chip Exchange NPC script; opens shop 9999001 (must exist in the
+       shops/shopitems DB tables) for lossless meso<->chip exchange
+  NPCs spawned via EnvironmentManager on dedicated casino maps (Game Zone, map 100000203) in Wave 1.
 
   18. Server-Side Utilities (server/)
      - ExecutorServiceManager — centralized thread-pool management (bots get schedulers here)
@@ -263,7 +296,7 @@
   GM Dev Commands (in-game, level 4)
 
   Nine command suites registered in CommandsExecutor.java. All have a `help` subcommand that lists their options
-  in-game via yellowMessage. Full reference: docs/Dev Commands Cheat Sheet.md
+  in-game via yellowMessage. Full reference: Documents/Dev Commands Cheat Sheet.md
 
      !bot       — Bot lifecycle, type assignment, loot, appearance, party, chat, megaphones
      !move      — Bot movement, pathfinding, recording/playback, chairs, interrupts
@@ -309,8 +342,9 @@
   Concurrency Model
 
   Each bot runs on a ScheduledExecutorService with randomized intervals. An ExecutorServiceManager centralizes thread
-  pool management. The environment setup runs in 7 phases with inter-phase delays. Thread safety is handled via
-  ConcurrentHashMap in shared registries. OPQ adds orchestrator-level coordination where the singleton manages phase
+  pool management. The environment setup runs in 7 waves — each wave's tasks run in parallel and the wave blocks
+  until complete; spawn arrival animations play on virtual threads (runAsync) so spawning never blocks on
+  choreography. Thread safety is handled via ConcurrentHashMap in shared registries. OPQ adds orchestrator-level coordination where the singleton manages phase
   transitions and task completion tracking across all registered bots. SocialHotPotatoManager and ConversationManager
   each run their own scheduled loops (8-20s and 60-120s respectively) and coordinate via synchronized state checks
   to prevent conflicting bot commands.
