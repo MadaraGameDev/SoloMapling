@@ -37,6 +37,22 @@ Bots don't just stand around — they:
 
 Everything revolves around **BotSM** (Bot State Machine) — an abstract FSM ticked every 2-6 seconds with adaptive speed (faster when players are nearby). Fifteen bot types extend it, each with their own state machine and behavioral loop. Adding a new bot personality means extending one base class and overriding the update loop. Configuration is YAML-driven — dialogue lines, item pools, movement recordings, and pricing all live in data files rather than hardcoded logic.
 
+## By the Numbers
+
+A ~31,500-line framework that touches the host engine in only ~1,100 lines across 33 files — the simulation lives almost entirely in its own package, with the Cosmic base left nearly untouched.
+
+| Layer | Stat |
+|-------|------|
+| Framework code | 168 Java files · ~31,500 lines |
+| Footprint on the Cosmic base | 33 files modified · +1,104 / −146 lines |
+| Standalone GM commands | 11 new command classes · ~2,850 lines |
+| Bot dialogue | 15 packs · ~4,000 lines |
+| Free Market names & descriptions | ~2,950 entries (incl. 1,636 player-style IGNs) |
+| Item pool configs | 14 YAML configs |
+| Movement recordings | ~440 pre-recorded paths across 26 maps |
+
+The framework code is pure logic (no config or generated data), and the content packs — dialogue, names, item pools, and movement recordings — are all data-driven, so behavior expands by editing data files rather than code.
+
 ### Bot Types
 
 | Bot | What It Does |
@@ -59,7 +75,7 @@ Everything revolves around **BotSM** (Bot State Machine) — an abstract FSM tic
 
 ### Key Subsystems
 
-- **Movement** — Three modes: replay from 825+ pre-recorded movement files, JGraphT Dijkstra pathfinding (ground/aware/aerial variants), and portal-based cross-map navigation.
+- **Movement** — Three modes: replay from ~440 pre-recorded movement paths across 26 maps, JGraphT Dijkstra pathfinding (ground/aware/aerial variants), and portal-based cross-map navigation.
 - **Decoration** — Procedural appearance generation, driven entirely by an in-memory equip metadata cache (no WZ reads at spawn time). Tier system (S/A/B/C/D) controls gear quality. Bots arrive fully dressed: body + quick generic equips at spawn, full class-aware decoration deferred to a background queue. Three layers: body (face/hair/skin), equips (job-specific), NX overlay (20% gate, tier-scaled intensity).
 - **Free Market** — Four FM regions with economy simulation. Regional multipliers, entrance premiums, day-of-week modifiers, procedural shop inventories.
 - **Trade** — 9-state sub-FSM handling the full trade lifecycle with fair pricing evaluation.
@@ -106,7 +122,7 @@ Full reference: [Dev Commands Cheat Sheet](src/main/java/soloMapling/Documents/D
 
 [Cosmic](https://github.com/P0nk/Cosmic) handles all the foundational game logic — client networking, packet handling, map loading, NPC scripts, quests, combat, and persistence. SoloMapling is a layer built on top that uses Cosmic's character and map systems to inject autonomous bot behavior.
 
-The SoloMapling code lives primarily in its own package (`soloMapling/`) with minimal modifications to the Cosmic base — mainly hook points for bot registration, command dispatching, and event observation. The original Cosmic readme is preserved at [Cosmic_README.md](Cosmic_README.md).
+The SoloMapling code lives primarily in its own package (`soloMapling/`) with minimal modifications to the Cosmic base — mainly hook points for bot registration, command dispatching, and event observation. Concretely, integrating the framework touched only **33 existing Cosmic files for a net +1,104 / −146 lines** — surgical hooks rather than a rewrite. The bulk of the additions to Cosmic's own packages are **11 self-contained GM command classes** (`!bot`, `!move`, `!env`, `!opq`, …, ~2,850 lines) under `client/command/commands/gm4/`, which are standalone dev tooling that *uses* the framework rather than modifying the engine. The original Cosmic readme is preserved at [Cosmic_README.md](Cosmic_README.md).
 
 ## Requirements & Setup
 
