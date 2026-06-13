@@ -238,7 +238,7 @@ Grab-bag: reactors / VFX, event bus tests, gacha pop, messenger invites, MMC.
 ### String + int + string — `!test <cmd> <cid> <text>`
 | Command | What it does |
 |---|---|
-| `chat` | `BotSpeak(fakechar, text)` ⚠ **missing `break;`** — falls through into `botmmchat`. |
+| `chat` | `BotSpeak(fakechar, text)`. |
 | `botmmchat` | `botSendMessengerChat(fakechar, text)`. |
 
 ---
