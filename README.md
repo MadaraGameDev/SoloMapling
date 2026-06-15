@@ -4,6 +4,12 @@ An artificial player simulation framework for MapleStory v83, built on the [Cosm
 
 The framework is purely server-side — no client modifications required. Bots are real character objects in the game engine, indistinguishable from player-controlled characters at the network level.
 
+## 📸 Showcase
+
+- **[Image Showcase](src/main/java/soloMapling/Documents/SHOWCASE.md)** — a captioned visual tour of the framework in action: Free Market, Blackjack, Drop Game, dialogue, Henesys bots, OPQ Rush, and more.
+- **[How to Record Movement](src/main/java/soloMapling/Documents/Movement-Recording.md)** — diagrams and walkthrough videos for capturing movement recordings and the pathfinding system.
+- **[Dev Diary](src/main/java/soloMapling/Documents/DEV-DIARY.md)** — work-in-progress shots from development.
+
 ## Documentation
 
 | Document | What it covers |
@@ -13,6 +19,7 @@ The framework is purely server-side — no client modifications required. Bots a
 | [Dev Commands Cheat Sheet](src/main/java/soloMapling/Documents/Dev%20Commands%20Cheat%20Sheet.md) | All in-game GM dev commands (`!bot`, `!move`, `!env`, `!opq`, …) |
 | [FreeMarket and ItemPool Architecture](src/main/java/soloMapling/Documents/FreeMarket%20and%20ItemPool%20Architecture.txt) | Shop generation pipeline, tier/version system, economy engine, haggling |
 | [Environment and World Startup](src/main/java/soloMapling/Documents/Environment%20and%20World%20Startup.md) | 7-wave world initialization, spawn choreography, platform system, casino setup |
+| [Movement Recording & Pathfinding](src/main/java/soloMapling/Documents/Movement-Recording.md) | How to record bot movement, path diagrams, and pathfinder walkthrough videos |
 | [Logging and Observability](src/main/java/soloMapling/Documents/Logging%20and%20Observability.md) | BotLog, debug utilities, the in-game MMC operator console, queue/event monitors |
 | [Cosmic README](Cosmic_README.md) | The original readme for the underlying Cosmic server emulator |
 
