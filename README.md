@@ -6,6 +6,13 @@ The framework is purely server-side — no client modifications required. Bots a
 
 ## 📸 Showcase
 
+### 🎬 Full demo (video)
+
+| Part 1 | Part 2 |
+|:------:|:------:|
+| [![SoloMapling — Full Demo Part 1](https://img.youtube.com/vi/9extNWkkTeM/hqdefault.jpg)](https://youtu.be/9extNWkkTeM) | [![SoloMapling — Full Demo Part 2](https://img.youtube.com/vi/PMfWSx-m_7o/hqdefault.jpg)](https://youtu.be/PMfWSx-m_7o) |
+| **[▶️ Watch Part 1](https://youtu.be/9extNWkkTeM)** | **[▶️ Watch Part 2](https://youtu.be/PMfWSx-m_7o)** |
+
 - **[Image Showcase](src/main/java/soloMapling/Documents/SHOWCASE.md)** — a captioned visual tour of the framework in action: Free Market, Blackjack, Drop Game, dialogue, Henesys bots, OPQ Rush, and more.
 - **[How to Record Movement](src/main/java/soloMapling/Documents/Movement-Recording.md)** — diagrams and walkthrough videos for capturing movement recordings and the pathfinding system.
 - **[Dev Diary](src/main/java/soloMapling/Documents/DEV-DIARY.md)** — work-in-progress shots from development.
