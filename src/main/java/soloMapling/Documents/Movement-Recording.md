@@ -32,19 +32,13 @@ stitching connectors between platforms.
 
 ### Main platform
 
-<video src="https://github.com/MadaraGameDev/SoloMapling/raw/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20-%20Recording%20Main%20Platform.mp4" controls width="720"></video>
-
-*Recording the main platform traversal path.*
+▶️ **[Watch: Recording the main platform](https://github.com/MadaraGameDev/SoloMapling/blob/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20-%20Recording%20Main%20Platform.mp4)** — recording the main platform traversal path.
 
 ### Connectors
 
-<video src="https://github.com/MadaraGameDev/SoloMapling/raw/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20-%20Recording%20connector%201.mp4" controls width="720"></video>
+▶️ **[Watch: Recording connector 1](https://github.com/MadaraGameDev/SoloMapling/blob/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20-%20Recording%20connector%201.mp4)** — linking two platforms.
 
-*Recording connector 1 — linking two platforms.*
-
-<video src="https://github.com/MadaraGameDev/SoloMapling/raw/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20-%20Recording%20Connector%202.mp4" controls width="720"></video>
-
-*Recording connector 2.*
+▶️ **[Watch: Recording connector 2](https://github.com/MadaraGameDev/SoloMapling/blob/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20-%20Recording%20Connector%202.mp4)** — recording connector 2.
 
 ---
 
@@ -52,10 +46,6 @@ stitching connectors between platforms.
 
 The pathfinding system resolving routes across a map using the directed graph + Dijkstra.
 
-<video src="https://github.com/MadaraGameDev/SoloMapling/raw/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20Path%20finder%201%20-%20trimmed.mp4" controls width="720"></video>
+▶️ **[Watch: Pathfinder 1](https://github.com/MadaraGameDev/SoloMapling/blob/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20Path%20finder%201%20-%20trimmed.mp4)** — pathfinder navigating between platforms.
 
-*Pathfinder navigating between platforms.*
-
-<video src="https://github.com/MadaraGameDev/SoloMapling/raw/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20Path%20finder%202.mp4" controls width="720"></video>
-
-*Pathfinder handling a more involved route.*
+▶️ **[Watch: Pathfinder 2](https://github.com/MadaraGameDev/SoloMapling/blob/main/src/main/java/soloMapling/Documents/1%20SoloMapling%20assets/SoloMapling%20Technical%20Assets/SoloMapling%20Path%20finder%202.mp4)** — pathfinder handling a more involved route.
