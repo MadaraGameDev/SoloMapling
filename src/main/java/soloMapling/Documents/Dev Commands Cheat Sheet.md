@@ -23,6 +23,7 @@ General-purpose bot lifecycle, type assignment, loot, equip, party, and chat/meg
 |---|---|
 | `help` | Print the full `!bot` command reference in-game. |
 | `create` | `BotTypeManager.createBots(c)` — spawn a bot at your position. |
+| `dcmap` / `dcallmap` / `dchere` | Disconnect ALL bots on your current map (`removeBotFromServer` each; other maps untouched). Reports the count. |
 | `hint` | Show a chat-command hint list `["Hey", "Test", "Cho"]` on your own player. |
 | `expirehint` | Expire the current chat-command hint on your player. |
 | `testslotinfo` | Dumps your equipped WEAPON/SHOES/CAP/COAT/PANTS/EAR/MEDAL (regular + cash). Debug print. |
@@ -72,6 +73,12 @@ General-purpose bot lifecycle, type assignment, loot, equip, party, and chat/meg
 | `lootlocation` | Loot at your player position (range default). |
 | `lootownitems` | Loot only items dropped by this bot, 12000 range. |
 | `loottargetsitems` | Loot items owned by your player, 9000 range. |
+
+#### Combat
+| Command | What it does |
+|---|---|
+| `attack` | `BotAttackDriver.forceSingle(fakechar)` — force the bot's **single-target** attack (ignores cooldown). Reports the hit/kill or why it missed (reach/no target). |
+| `attackaoe` | `BotAttackDriver.forceAoe(fakechar)` — force the bot's **AoE** attack, or report "`<job>` has no AoE attack" when that slot is empty (e.g. Assassin, plain Bandit). |
 
 #### Appearance
 | Command | What it does |

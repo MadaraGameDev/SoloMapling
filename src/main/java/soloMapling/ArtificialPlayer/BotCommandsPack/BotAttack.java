@@ -71,7 +71,8 @@ public final class BotAttack {
         );
     }
 
-    private static WeaponType resolveEquippedWeaponType(Character chr) {
+    /** The bot's currently equipped main-hand weapon class, or null if unarmed. */
+    public static WeaponType resolveEquippedWeaponType(Character chr) {
         Item weapon = chr.getInventory(InventoryType.EQUIPPED).getItem(EQUIP_SLOT_WEAPON);
         if (weapon == null) return null;
         return ItemInformationProvider.getInstance().getWeaponType(weapon.getItemId());

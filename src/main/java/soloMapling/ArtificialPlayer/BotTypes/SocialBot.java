@@ -230,7 +230,7 @@ public class SocialBot extends BotSM {
         ExecutorServiceManager.runAsync(() -> {
             sleepAmountSeconds(2000 + random.nextInt(2000));
             botFaceTowardsPoint(getChr(), player.getPosition());
-            String line = getRandomLine(finalCategory);
+            String line = getRandomLine(finalCategory, player);
             if (line != null) {
                 BotSpeak(getChr(), line);
                 int emote = getRandomEmote(finalCategory);
@@ -250,7 +250,7 @@ public class SocialBot extends BotSM {
         if (random.nextDouble() < RARE_LINE_CHANCE) {
             category = "Rare";
         }
-        String line = getRandomLine(category);
+        String line = getRandomLine(category, player);
         if (line != null) {
             BotSpeak(getChr(), line);
             sleepAmountSeconds(500 + random.nextInt(500));
@@ -262,7 +262,7 @@ public class SocialBot extends BotSM {
     }
 
     private void doGreeting(Character player) {
-        String line = getRandomLine("Greeting");
+        String line = getRandomLine("Greeting", player);
         if (line != null) {
             BotSpeak(getChr(), line);
             int emote = getRandomEmote("Greeting");
@@ -276,7 +276,7 @@ public class SocialBot extends BotSM {
     }
 
     private void doGoodbye(Character player) {
-        String line = getRandomLine("Goodbye");
+        String line = getRandomLine("Goodbye", player);
         if (line != null) {
             BotSpeak(getChr(), line);
             int emote = getRandomEmote("Goodbye");
@@ -289,14 +289,14 @@ public class SocialBot extends BotSM {
     }
 
     private void doReducedResponse(Character player) {
-        String line = getRandomLine("Reduced");
+        String line = getRandomLine("Reduced", player);
         if (line != null) {
             BotSpeak(getChr(), line);
         }
     }
 
     private void doNonverbalResponse(Character player) {
-        String line = getRandomLine("Nonverbal");
+        String line = getRandomLine("Nonverbal", player);
         if (line != null) {
             BotSpeak(getChr(), line);
         }
@@ -332,7 +332,7 @@ public class SocialBot extends BotSM {
 
         long elapsed = System.currentTimeMillis() - lastRespondantMessageTime;
         if (elapsed > CONVERSATION_TIMEOUT_MS) {
-            String line = getRandomLine("Timeout");
+            String line = getRandomLine("Timeout", getInteractors().getRespondant());
             if (line != null) {
                 BotSpeak(getChr(), line);
             }
@@ -365,13 +365,11 @@ public class SocialBot extends BotSM {
 
     // --- Dialogue helpers ---
 
-    private String getRandomLine(String category) {
+    // Resolves any {TOKEN}s (incl. {PLAYER_*}) against this bot and the player it's reacting to.
+    // A line whose tokens can't resolve is dropped rather than spoken raw.
+    private String getRandomLine(String category, Character player) {
         try {
-            BotDialogueHandler.DialogueConstructor dialog =
-                    BotDialogueHandler.getDialogueCon(DIALOGUE_PATH, BOT_TYPE_KEY, category);
-            if (dialog == null || dialog.getDialogue().isEmpty()) return null;
-            List<String> lines = dialog.getDialogue();
-            return lines.get(random.nextInt(lines.size()));
+            return BotDialogueHandler.getRandomResolvedLine(DIALOGUE_PATH, BOT_TYPE_KEY, category, getChr(), player);
         } catch (Exception e) {
             return null;
         }

@@ -31,6 +31,7 @@ public class Foothold implements Comparable<Foothold> {
     private final Point p2;
     private final int id;
     private int next, prev;
+    private boolean forbidFallDown;
 
     public Foothold(Point p1, Point p2, int id) {
         this.p1 = p1;
@@ -98,5 +99,59 @@ public class Foothold implements Comparable<Foothold> {
 
     public void setPrev(int prev) {
         this.prev = prev;
+    }
+
+    // ── GCMoveSystem additions (GreenCat dynamic movement) ──
+    // Terrain model used by the dynamic physics/nav engine.
+
+    public double slope() {
+        if (isWall()) {
+            return 0.0;
+        }
+        return (double) (p2.y - p1.y) / (double) (p2.x - p1.x);
+    }
+
+    public boolean isForbidFallDown() {
+        return forbidFallDown;
+    }
+
+    public void setForbidFallDown(boolean forbidFallDown) {
+        this.forbidFallDown = forbidFallDown;
+    }
+
+    public static boolean isCollidableWall(Foothold wall, java.util.Map<Integer, Foothold> footholdsById) {
+        if (wall == null || !wall.isWall()) {
+            return false;
+        }
+        Point lowerEndpoint = wall.getY1() >= wall.getY2() ? wall.p1 : wall.p2;
+        return linkedChainReachesGroundAtEndpoint(wall, wall.prev, false, lowerEndpoint, footholdsById)
+                || linkedChainReachesGroundAtEndpoint(wall, wall.next, true, lowerEndpoint, footholdsById);
+    }
+
+    private static boolean linkedChainReachesGroundAtEndpoint(Foothold wall, int linkedId, boolean followNext,
+                                                              Point endpoint, java.util.Map<Integer, Foothold> footholdsById) {
+        if (linkedId == 0) return false;
+        Foothold linked = footholdsById.get(linkedId);
+        if (linked == null || !touchesPoint(linked, endpoint)) return false;
+        return chainReachesGround(wall, followNext, footholdsById);
+    }
+
+    private static boolean chainReachesGround(Foothold start, boolean followNext,
+                                              java.util.Map<Integer, Foothold> footholdsById) {
+        int id = followNext ? start.next : start.prev;
+        int depth = 0;
+        while (id != 0 && depth < 10) {
+            Foothold fh = footholdsById.get(id);
+            if (fh == null) return false;
+            if (!fh.isWall()) return true;
+            id = followNext ? fh.next : fh.prev;
+            depth++;
+        }
+        return false;
+    }
+
+    private static boolean touchesPoint(Foothold foothold, Point point) {
+        return (foothold.getX1() == point.x && foothold.getY1() == point.y)
+                || (foothold.getX2() == point.x && foothold.getY2() == point.y);
     }
 }

@@ -216,4 +216,22 @@ public class FootholdTree {
     public int getMinDropX() {
         return minDropX;
     }
+
+    // ── GCMoveSystem (GreenCat dynamic movement): recursive quadtree flatten.
+    // Used by the nav-graph baker to enumerate every foothold.
+    public List<Foothold> getAllFootholds() {
+        List<Foothold> all = new LinkedList<>();
+        collectAll(all);
+        return all;
+    }
+
+    private void collectAll(List<Foothold> out) {
+        out.addAll(footholds);
+        if (nw != null) {
+            nw.collectAll(out);
+            ne.collectAll(out);
+            sw.collectAll(out);
+            se.collectAll(out);
+        }
+    }
 }

@@ -17,7 +17,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static soloMapling.ArtificialPlayer.BotCommandsPack.MegaphoneCommands.BotItemMegaphone;
-import static soloMapling.ArtificialPlayer.BotDialogueHandler.getRandomDialogueLine;
+import static soloMapling.ArtificialPlayer.BotDialogueHandler.getRandomResolvedLine;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.BotEmote;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.VFXCommands.botScrollFail;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.VFXCommands.botScrollSuccess;
@@ -159,7 +159,8 @@ public class ScrollingBot extends BotSM {
         getTradeWants().setMesoWanted(adj);
 //        getTradeWants().setMesoWanted(0);
 //        getTradeWants().addItemWanted(2022179, 2);
-        String adLine = getRandomDialogueLine(this, "AdvertiseSale").replace("%PRICE%", formatPriceToShorthand(adj));
+        String adBase = getRandomResolvedLine(this, "AdvertiseSale");
+        String adLine = (adBase != null ? adBase : "").replace("%PRICE%", formatPriceToShorthand(adj));
         BotItemMegaphone(getChr(), adLine, eqToSell);
         setTradeMode(BotTradeSM.TradeMode.SELLING);
     }

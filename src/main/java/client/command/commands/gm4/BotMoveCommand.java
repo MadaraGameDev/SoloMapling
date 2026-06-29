@@ -272,6 +272,19 @@ public class BotMoveCommand extends Command {
                 MovementCommands.botFaceTowardsPoint(fakechar, c.getPlayer().getPosition());
                 player.yellowMessage("Bot " + fakechar.getId() + " facing towards you");
                 break;
+            case "wander":
+                soloMapling.ArtificialPlayer.BotWanderSystem.BotWanderSystem.start(fakechar);
+                player.yellowMessage("Bot " + fakechar.getId() + " wandering this map");
+                break;
+            case "wandernear":
+                // loiter near your X (radius 150) - the "near an NPC/object" mode
+                soloMapling.ArtificialPlayer.BotWanderSystem.BotWanderSystem.start(fakechar, c.getPlayer().getPosition().x, 150);
+                player.yellowMessage("Bot " + fakechar.getId() + " wandering near you (r=150)");
+                break;
+            case "wanderstop":
+                soloMapling.ArtificialPlayer.BotWanderSystem.BotWanderSystem.stop(fakechar);
+                player.yellowMessage("Bot " + fakechar.getId() + " stopped wandering");
+                break;
             default:
                 player.yellowMessage("Invalid command - NumberedCommand");
                 break;
@@ -289,6 +302,10 @@ public class BotMoveCommand extends Command {
         player.yellowMessage("-- Bot Info --");
         player.yellowMessage("!move getbotpos <cid>            - get bot position, foothold, map");
         player.yellowMessage("!move faceme <cid>               - bot faces towards you");
+        player.yellowMessage("-- Flavor Wander --");
+        player.yellowMessage("!move wander <cid>               - stroll random legal spots (whole map)");
+        player.yellowMessage("!move wandernear <cid>           - loiter near you (radius 150)");
+        player.yellowMessage("!move wanderstop <cid>           - stop wandering");
         player.yellowMessage("-- Basic Movement --");
         player.yellowMessage("!move idle <cid>                 - make bot idle standing");
         player.yellowMessage("!move fall <cid>                 - make bot fall down");

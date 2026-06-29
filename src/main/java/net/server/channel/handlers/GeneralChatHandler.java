@@ -30,6 +30,7 @@ import net.packet.InPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.ChatLogger;
+import soloMapling.ArtificialPlayer.BotBuffRequestSystem.BotBuffRequestHandler;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.MessageQueue;
 import tools.PacketCreator;
@@ -62,6 +63,8 @@ public final class GeneralChatHandler extends AbstractPacketHandler {
             }
 
             MessageQueue.getInstance().addMessage("primary", new ChatMessage(c.getPlayer(), s)); // SM NOTE Allows player to interact with bots.
+
+            BotBuffRequestHandler.tryHandle(chr, s); // SM: "hs pls" etc -> nearest eligible bot grants the buff
 
             if (!chr.isHidden()) {
                 chr.getMap().broadcastMessage(PacketCreator.getChatText(chr.getId(), s, chr.getWhiteChat(), show));

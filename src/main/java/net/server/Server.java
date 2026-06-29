@@ -71,6 +71,9 @@ import server.expeditions.ExpeditionBossLog;
 import server.life.PlayerNPC;
 import server.quest.Quest;
 import service.NoteService;
+import soloMapling.ArtificialPlayer.BotClientHandler;
+import soloMapling.Environment.EnvironmentManager;
+import soloMapling.server.MethodScheduler;
 import tools.DatabaseConnection;
 import tools.Pair;
 
@@ -953,6 +956,12 @@ public class Server {
 
         for (Channel ch : this.getAllChannels()) {
             ch.reloadEventScriptManager();
+        }
+
+        // SoloMapling cold-boot bot startup. Everything bots need is ready by here:
+        BotClientHandler.initHeadlessBotClient();
+        if (YamlConfig.config.server.SPAWN_BOTS_ON_STARTUP) {
+            MethodScheduler.runAfterDelay(EnvironmentManager::environmentLoadStartup, 1000);
         }
     }
 

@@ -1,20 +1,25 @@
 package soloMapling.Environment;
 
 import client.Character;
+import client.Job;
 import server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotGeneration;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorationQueue;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotEquipChecker;
 import soloMapling.ArtificialPlayer.BotHelpers;
+import soloMapling.ArtificialPlayer.BotMapEntryResponder;
 import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.ArtificialPlayer.BotTypeManager;
+import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
+import soloMapling.ArtificialPlayer.BotGrindSystem.BotSpotPicker;
 import soloMapling.ArtificialPlayer.BotTypes.Blackjack.BlackjackDealerBot;
 import soloMapling.ArtificialPlayer.ConversationManager;
 import soloMapling.ArtificialPlayer.SocialHotPotatoManager;
 import soloMapling.Casino.CasinoChipConfig;
 import soloMapling.server.ExecutorServiceManager;
 import soloMapling.server.NpcSpawner;
+import constants.id.MapId;
 import constants.id.NpcId;
 
 import java.awt.*;
@@ -23,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static soloMapling.ArtificialPlayer.BotCustomization.EquipBot;
 import static soloMapling.ArtificialPlayer.BotCustomization.getRandomChairId;
 import static soloMapling.ArtificialPlayer.BotGeneration.createBotPollReadiness;
 import static soloMapling.ArtificialPlayer.BotHelpers.isBot;
@@ -82,6 +88,10 @@ public class EnvironmentManager {
         // before any player can trigger this.
         long startupStart = System.currentTimeMillis();
 
+        // Wake bots instantly (movement + macro brain) whenever a real player shares their map, in both
+        // directions - a player entering a populated map, or a bot returning to the player's map.
+        BotMapEntryResponder.register();
+
         runWave(1, "Essentials", List.of(
                 () -> spawnCasinoNpcs(),
                 () -> spawnTutorialBot(),
@@ -140,6 +150,43 @@ public class EnvironmentManager {
                 () -> spawnMerchBotsBatch("m5", 2, 2, 1)
         ));
 
+        // Roaming training grinders. Each cohort = N job-coherent bots at a town's spawn portal; they
+        // discover nearby level-appropriate field maps via WZ and fan out on their own. DIAL THESE
+        // COUNTS DOWN (e.g. 2 each) for a first-boot pilot, then restore. Sub-level-10 cohorts spawn
+        // Beginners (job 0): the decorator dresses them with a sword and they fight with a basic
+        // skill-0 swing (BotAttackConfig basic-swing fallback), so a 1..9 band is fine - they hunt
+        // snails / shrooms on the low fields each town discovers nearby.
+        //
+        // DEEP-HUB cohorts: map discovery is hop-capped by level (hopsForLevel), so a long dungeon's far
+        // end is out of a town-spawned bot's reach until it's high enough level. To populate the deep maps
+        // with appropriately-levelled bots we also spawn a cohort at a deep mid-dungeon junction:
+        // Sleepywood's Ant Tunnel runs ~9 hops to Ant Tunnel Park (a lv45-70 bot's radius doesn't span
+        // that); Ludibrium's deep high-level end is the Path of Time / Clocktower (Forgotten Path of Time →
+        // Papulatus), past what the Ludi-town cohort reaches. A non-town spawn is handled gracefully:
+        // homeMapId becomes that junction, GO_TOWN returns there, and the unlisted map just skips shop
+        // trips (TrainingBot.doInit / TOWN_SHOPS).
+        runWave(8, "Training bots", List.of(
+                () -> GCMovement.mapsWithinHops(MapId.HENESYS, 1),          // prewarm the portal graph once
+                () -> spawnTrainingBotsAt(MapId.LITH_HARBOUR,  10,  1, 15),
+                () -> spawnTrainingBotsAt(MapId.HENESYS,       125, 10, 55),
+                () -> spawnTrainingBotsAt(MapId.KERNING_CITY,  125, 10, 55),
+                () -> spawnTrainingBotsAt(MapId.PERION,        125, 10, 55),
+                () -> spawnTrainingBotsAt(MapId.ELLINIA,       125, 10, 55),
+                () -> spawnTrainingBotsAt(MapId.SLEEPYWOOD,     125, 25, 70),  // town: Sleepy Dungeon + Ant Tunnel I-IV + Forest of Golem
+                () -> spawnTrainingBotsAt(MapId.ANT_TUNNEL_PARK, 80, 40, 80), // deep hub (~9 hops in): Cave of Evil Eye / Grave of Mushmom
+                () -> spawnTrainingBotsAt(MapId.ORBIS,         120, 30, 75),
+                () -> spawnTrainingBotsAt(MapId.LUDIBRIUM,     100, 25, 95),
+                () -> spawnTrainingBotsAt(MapId.PATH_OF_TIME_HUB, 60, 70, 95), // deep hub: Forgotten Path of Time / Clocktower (Platoon Chronos, Papa Pixie → Papulatus)
+                () -> spawnTrainingBotsAt(MapId.EL_NATH,       100, 50, 80),  // town: shops at El Nath Market (potion / equip); grinds Ice Valley + cloud maps
+                () -> spawnTrainingBotsAt(MapId.SHARP_CLIFF_I, 100, 60, 90), // deep hub (Jeff one-way from Ice Valley II): Sharp Cliff II / Wolf Territory / Forest of Dead Trees / Dead Mine
+
+                () -> spawnTrainingBotsAt(MapId.HENESYS,       15,  1,  9),  // beginner sword grinders
+                () -> spawnTrainingBotsAt(MapId.KERNING_CITY,  10,  1,  9),  // beginner sword grinders
+                () -> spawnTrainingBotsAt(MapId.PERION,        10,  1,  9),  // beginner sword grinders
+                () -> spawnTrainingBotsAt(MapId.ELLINIA,       10,  1,  9)  // beginner sword grinders
+
+        ));
+
         BotDecorationQueue.start();
         BotEquipChecker.start();
 
@@ -147,6 +194,47 @@ public class EnvironmentManager {
         System.out.println(String.format(
                 "[EnvironmentManager] === All bots initialized: %d bots in %.1fs ===",
                 BotGeneration.getBotsCreatedCount(), totalSeconds));
+    }
+
+    // Spawn one town's training-bot cohort: n job-coherent roaming grinders at the town's spawn
+    // portal, each a random non-pirate explorer class (1..4) with a coherent level (lo..hi) + job +
+    // gear set together by the decorator. They self-discover nearby level-appropriate field maps and
+    // fan out. A sub-level-10 band spawns Beginners (job 0): the decorator gives them a sword and
+    // they fight with a basic skill-0 swing, so low bands are fine (class 1..4 is moot - all sword).
+    private static int spawnTrainingBotsAt(int townMapId, int n, int loLevel, int hiLevel) {
+        MapleMap map = getMapleMapById(townMapId);
+        if (map == null || map.getPortal(0) == null) {
+            debugprint(fmt("TrainingBots: no map / spawn portal for {}", townMapId));
+            return 0;
+        }
+        Point sp = map.getPortal(0).getPosition();
+        int spawned = spawnScatteredTrainingBots(map, sp, n, loLevel, hiLevel).size();
+        debugprint(fmt("TrainingBots: {} spawned on map {} (lv {}..{})", spawned, townMapId, loLevel, hiLevel));
+        return spawned;
+    }
+
+    // Spawn n training bots scattered across the map's reachable platforms - an organic ground spot per
+    // bot picked by BotSpotPicker (every walkable ledge in the X band, vertical stacking included),
+    // instead of stacking everyone on one point. `anchor` seeds the reachability filter (pass the spawn
+    // portal, or a GM's position for a dev dry-run) and is the per-bot fallback when the nav graph yields
+    // no eligible ledge (empty/unbaked). Returns the created ids, already typed + started as TRAINING_BOTs.
+    public static List<Integer> spawnScatteredTrainingBots(MapleMap map, Point anchor, int n, int loLevel, int hiLevel) {
+        List<Point> spots = BotSpotPicker.pickGroundSpots(map, anchor.x, anchor.y, n);
+        List<Integer> ids = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            Point spawnAt = i < spots.size() ? spots.get(i) : anchor;
+            int baseClass = 1 + random.nextInt(4); // 1..4 = Warrior/Magician/Bowman/Thief (excludes Pirate)
+            try {
+                int botId = BotGeneration.createBot(spawnAt, map, baseClass, loLevel, hiLevel);
+                if (botId > 0) {
+                    ids.add(botId);
+                }
+            } catch (Exception e) {
+                debugprint(fmt("TrainingBots: create failed on {} ({})", map.getId(), e.getMessage()));
+            }
+        }
+        setAndStartBots(ids, BotTypeManager.BotType.TRAINING_BOT);
+        return ids;
     }
 
     /**
@@ -408,6 +496,60 @@ public class EnvironmentManager {
                 debugprint("Failed to spawn Drop Game Bot in Henesys Potion Shop.");
             }
         });
+    }
+
+    private static final int HHG1 = 104040000; // Henesys Hunting Ground 1
+
+    // Weapon ids by type; any level works since the bot equip bypasses requirements. The
+    // weapon TYPE is what matters - it drives the attack route, projectile, and (for
+    // warriors) the sword/spear skill form.
+    private static final int W_SWORD = 1302012, W_SPEAR = 1432007, W_WAND = 1372015,
+            W_BOW = 1452009, W_CROSSBOW = 1462009, W_CLAW = 1472026, W_DAGGER = 1332018;
+
+    // One fixed spot per class line, with the job to use at tier 1/2/3/4. Forcing the job +
+    // weapon lets the attack resolver pick the tier-appropriate skill for in-game testing.
+    private record TierSlot(Point pos, int weaponId, int t1, int t2, int t3, int t4) {
+        int jobForTier(int tier) {
+            return switch (tier) { case 2 -> t2; case 3 -> t3; case 4 -> t4; default -> t1; };
+        }
+    }
+
+    private static final List<TierSlot> ATTACK_TEST_SLOTS = List.of(
+            new TierSlot(new Point(240, 215),  W_SWORD,    100, 110, 111, 112), // Warrior: Fighter->Crusader->Hero
+            new TierSlot(new Point(1022, 215), W_SPEAR,    100, 130, 131, 132), // Warrior: Spearman->DrK->DarkKnight (spear forms)
+            new TierSlot(new Point(340, -85),  W_WAND,     200, 210, 211, 212), // Mage: F/P Wizard->Mage->ArchMage
+            new TierSlot(new Point(912, -85),  W_WAND,     200, 220, 221, 222), // Mage: I/L Wizard->Mage->ArchMage
+            new TierSlot(new Point(631, 215),  W_WAND,     200, 230, 231, 232), // Mage: Cleric->Priest->Bishop (holy); between the two y=215 warriors
+            new TierSlot(new Point(900, -325), W_BOW,      300, 310, 311, 312), // Archer: Hunter->Ranger->Bowmaster
+            new TierSlot(new Point(404, -325), W_CROSSBOW, 300, 320, 321, 322), // Archer: Crossbowman->Sniper->Marksman
+            new TierSlot(new Point(391, -565), W_CLAW,     400, 410, 411, 412), // Thief: Assassin->Hermit->Night Lord
+            new TierSlot(new Point(866, -565), W_DAGGER,   400, 420, 421, 422)  // Thief: Bandit->Chief Bandit->Shadower
+    );
+
+    /**
+     * Spawns one attack test bot per class line on Henesys Hunting Ground 1, all forced to
+     * the given job tier (1-4) and a matching level + weapon, so each tier's attacks can be
+     * eyeballed in isolation. Forcing the weapon also guarantees the crossbowman gets a
+     * crossbow (sidestepping the decoration pool's bow bias).
+     */
+    public static void spawnAttackTestBots(int tierArg) {
+        final int tier = (tierArg < 1 || tierArg > 4) ? 1 : tierArg;
+        final int level = switch (tier) { case 2 -> 50; case 3 -> 100; case 4 -> 130; default -> 25; };
+
+        debugprint(fmt("Spawning tier-{} attack test bots on Henesys Hunting Ground 1...", tier));
+        for (TierSlot slot : ATTACK_TEST_SLOTS) {
+            ExecutorServiceManager.runAsync(() -> {
+                Character bot = createBotWithRetry(slot.pos(), HHG1, 5);
+                if (bot == null) {
+                    debugprint(fmt("Failed to spawn attack test bot at {}", slot.pos()));
+                    return;
+                }
+                bot.setLevel(level);
+                bot.setJob(Job.getById(slot.jobForTier(tier)));
+                EquipBot(bot, slot.weaponId());
+                setAndStartBots(List.of(bot.getId()), BotTypeManager.BotType.TEST_ATTACK_BOT);
+            });
+        }
     }
 
     public static void spawnDropGameSpectatorsPotionShop() {

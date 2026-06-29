@@ -157,6 +157,7 @@ import client.command.commands.gm4.ReactorCommands;
 import client.command.commands.gm4.ArtificialFreeMarketCommand;
 import client.command.commands.gm4.BossDropRateCommand;
 import client.command.commands.gm4.BotMoveCommand;
+import client.command.commands.gm4.GCMoveCommand;
 import client.command.commands.gm4.CakeCommand;
 import client.command.commands.gm4.DropRateCommand;
 import client.command.commands.gm4.EnvironmentCommand;
@@ -534,6 +535,7 @@ public class CommandsExecutor {
         addCommand("opq", 4, OPQCommands.class);
         addCommand("reactor", 4, ReactorCommands.class);
         addCommand("move", 4, BotMoveCommand.class);
+        addCommand("gcmove", 4, GCMoveCommand.class);
         addCommand("betafmshop", 4, ArtificialFreeMarketCommand.class);
         addCommand("test", 4, TestDevCommand.class);
         addCommand("fmbot", 4, FMBotCommand.class);

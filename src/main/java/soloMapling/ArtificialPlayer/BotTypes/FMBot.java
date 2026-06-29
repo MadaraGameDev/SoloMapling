@@ -28,7 +28,7 @@ import java.util.Random;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.WarpCommands.FMRoomWarpPortalId;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.WarpCommands.botEnterFMRoom;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.WarpCommands.botExitFMRoom;
-import static soloMapling.ArtificialPlayer.BotDialogueHandler.getRandomDialogueLine;
+import static soloMapling.ArtificialPlayer.BotDialogueHandler.getRandomResolvedLine;
 import static soloMapling.server.SoloMaplingUtilities.generateRandomNumber;
 import static soloMapling.ArtificialPlayer.BotHelpers.convertItemIdToName;
 import static soloMapling.ArtificialPlayer.BotLogic.isInsideFM;
@@ -297,8 +297,10 @@ public class FMBot extends BotSM {
             Integer itemMarketValue = ItemUtilities.getItemMarketValue(thisItem);
             Boolean purchase = shouldPurchaseItem(itemPrice, itemMarketValue);
             if (purchase) {
-                String buymsg = getRandomDialogueLine(FMBot.this, "PurchaseItem");
-                currentTarget.chat(getChr(), buymsg);
+                String buymsg = getRandomResolvedLine(FMBot.this, "PurchaseItem");
+                if (buymsg != null) {
+                    currentTarget.chat(getChr(), buymsg);
+                }
                 if (currentTarget instanceof HiredMerchantAdapter) {
                     currentTarget.botBuyItem(getChr(), pItem, (short) 1);
                 } else if (currentTarget instanceof PlayerShopAdapter) {

@@ -2,6 +2,7 @@ package soloMapling.ArtificialPlayer.BotDecoratorSystem;
 
 import com.esotericsoftware.yamlbeans.YamlReader;
 import server.ItemInformationProvider;
+import soloMapling.itemPool.EquipOmitList;
 
 import java.io.FileReader;
 import java.util.*;
@@ -119,6 +120,7 @@ public class GenericEquipPool {
         for (PoolItem item : list) {
             if (item.minLevel > botLevel) continue; // hard rule: never over-level
             if (item.gender != GENDER_UNISEX && item.gender != botGender) continue; // gender gate
+            if (EquipOmitList.isOmitted(item.id)) continue; // central omit list (flag/junk items)
             double gap = botLevel - item.minLevel;
             double w = 1.0 / (1.0 + gap * LEVEL_DECAY);
             if (w < FASHION_FLOOR) w = FASHION_FLOOR;

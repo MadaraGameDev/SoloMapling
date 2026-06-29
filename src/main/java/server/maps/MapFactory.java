@@ -158,6 +158,13 @@ public class MapFactory {
 
         map.setFieldLimit(DataTool.getInt(infoData.getChildByPath("fieldLimit"), 0));
         map.setMobInterval((short) DataTool.getInt(infoData.getChildByPath("createMobInterval"), 5000));
+        // ── GCMoveSystem (GreenCat dynamic movement): populate live terrain model from WZ.
+        // The dynamic physics/nav engine reads these off the LIVE map.
+        map.setSwim(DataTool.getInt(infoData.getChildByPath("swim"), 0) != 0);
+        Data footholdSpeedData = infoData.getChildByPath("fs");
+        if (footholdSpeedData != null) {
+            map.setFootholdSpeed(DataTool.getFloat(footholdSpeedData));
+        }
         PortalFactory portalFactory = new PortalFactory();
         for (Data portal : mapData.getChildByPath("portal")) {
             map.addPortal(portalFactory.makePortal(DataTool.getInt(portal.getChildByPath("pt")), portal));
@@ -204,6 +211,8 @@ public class MapFactory {
                     Foothold fh = new Foothold(new Point(x1, y1), new Point(x2, y2), Integer.parseInt(footHold.getName()));
                     fh.setPrev(DataTool.getInt(footHold.getChildByPath("prev")));
                     fh.setNext(DataTool.getInt(footHold.getChildByPath("next")));
+                    // GCMoveSystem: ledges flagged forbidFallDown block down-jumps/drops.
+                    fh.setForbidFallDown(DataTool.getInt(footHold.getChildByPath("forbidFallDown"), 0) != 0);
                     if (fh.getX1() < lBound.x) {
                         lBound.x = fh.getX1();
                     }
@@ -225,6 +234,17 @@ public class MapFactory {
             fTree.insert(fh);
         }
         map.setFootholds(fTree);
+        // GCMoveSystem: parse ropes/ladders from WZ ladderRope into the live map.
+        Data ropeData = mapData.getChildByPath("ladderRope");
+        if (ropeData != null) {
+            for (Data rope : ropeData) {
+                int rx = DataTool.getInt(rope.getChildByPath("x"));
+                int ry1 = DataTool.getInt(rope.getChildByPath("y1"));
+                int ry2 = DataTool.getInt(rope.getChildByPath("y2"));
+                boolean ladder = DataTool.getInt(rope.getChildByPath("l"), 0) == 1;
+                map.addRope(new Rope(rx, ry1, ry2, ladder));
+            }
+        }
         if (mapData.getChildByPath("area") != null) {
             for (Data area : mapData.getChildByPath("area")) {
                 int x1 = DataTool.getInt(area.getChildByPath("x1"));

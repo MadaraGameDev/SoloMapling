@@ -22,6 +22,13 @@ public class BotDecorateEquips {
      * or multiple threads will mutate the same Character's inventory concurrently.
      */
     public static void decorateBotEquips(Character fakechar) {
+        // Level 1-9 bots all share the classless BEGINNER job; the class-aware
+        // pass below would dress them in random junk, so hand them curated
+        // starter gear instead and stop.
+        if (BeginnerEquip.isBeginner(fakechar)) {
+            BeginnerEquip.apply(fakechar);
+            return;
+        }
         equipTopBottom(fakechar);
         equipWeapon(fakechar);
         equipCapGloveShoes(fakechar);
@@ -278,6 +285,11 @@ public class BotDecorateEquips {
                 break;
 
             case BOWMAN:
+            case CROSSBOWMAN:
+                // getJobStyle() resolves the crossbow line (320/321/322) to
+                // CROSSBOWMAN rather than the broad BOWMAN, so it must share this
+                // case or it falls through to default and gets a 1H sword.
+                // determineBowmanPath below picks BOW vs CROSSBOW from the job id.
                 if (jobLevel == 1) {
                     // Beginner bowman can use either bow or crossbow
                     possibleWeapons.add(random.nextBoolean() ? EquipType.BOW : EquipType.CROSSBOW);

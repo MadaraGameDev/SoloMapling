@@ -20,7 +20,7 @@ import static soloMapling.ArtificialPlayer.BotClientHandler.getBotClient;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.BotEmote;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.BotSpeak;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.WarpCommands.botWarpMapOnPortal;
-import static soloMapling.ArtificialPlayer.BotDialogueHandler.getRandomDialogueLine;
+import static soloMapling.ArtificialPlayer.BotDialogueHandler.getRandomResolvedLine;
 import static soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands.nudgeAwayFromOverlap;
 import static soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands.pathFinderAware;
 import static soloMapling.BotLogger.log;
@@ -215,7 +215,7 @@ public class HenesysBot extends BotSM {
     private void doRandomChat(String dialogueNode) {
         if (rollChanceInverse(20)) {
             try {
-                String line = getRandomDialogueLine(this, dialogueNode);
+                String line = getRandomResolvedLine(this, dialogueNode);
                 if (line != null) BotSpeak(getChr(), line);
             } catch (Exception e) {
                 // dialogue YAML node missing, skip

@@ -70,6 +70,20 @@ public abstract class BotSM implements EventSubscriber {
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> scheduledTask;
 
+    // One shared tick body for every (re)schedule path - start / priority change / nudge.
+    private final Runnable tickRunnable = () -> {
+        try {
+            updateState();
+        } catch (Exception e) {
+            e.printStackTrace(); // Handle exceptions to ensure the scheduler doesn't stop unexpectedly
+        }
+    };
+
+    // Map-entry responsiveness (see BotMapEntryResponder): timestamp of the last nudgeSoon, used to
+    // debounce repeated entries so the next tick isn't perpetually reset (which would starve the FSM).
+    private volatile long lastNudgeMs = 0L;
+    private static final long NUDGE_DEBOUNCE_MS = 1500;
+
     private BotDialogueHandler dialogueHandler;
 
     private BotTradeSM botTradeSM = null; // Initially null
@@ -246,16 +260,8 @@ public abstract class BotSM implements EventSubscriber {
         }
         if (scheduledTask == null || scheduledTask.isCancelled() || scheduler.isShutdown() || scheduler.isTerminated()) {
             // Using FixedDelay instead of FixedRate - // SM NOTE this should prevent "piling up", and only allow 1 at a time
-            scheduledTask = scheduler.scheduleWithFixedDelay(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        updateState();
-                    } catch (Exception e) {
-                        e.printStackTrace(); // Handle exceptions to ensure the scheduler doesn't stop unexpectedly
-                    }
-                }
-            }, initialDelayMs, getRandomDelay(), TimeUnit.MILLISECONDS);
+            scheduledTask = scheduler.scheduleWithFixedDelay(
+                    tickRunnable, initialDelayMs, getRandomDelay(), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -272,17 +278,38 @@ public abstract class BotSM implements EventSubscriber {
         }
 
         if (scheduler != null && !scheduler.isShutdown()) {
-            scheduledTask = scheduler.scheduleWithFixedDelay(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        updateState();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }, currentDelay, currentDelay, TimeUnit.MILLISECONDS);
+            scheduledTask = scheduler.scheduleWithFixedDelay(
+                    tickRunnable, currentDelay, currentDelay, TimeUnit.MILLISECONDS);
         }
+    }
+
+    // Pull the next macro tick forward to ~initialDelayMs from now, then resume the normal 2-6s
+    // cadence. Lets a bot act promptly the instant it shares a map with a real player (a player walked
+    // into the bot's map, or the bot walked into the player's map) instead of waiting out its slow
+    // wheel. Debounced so a pacing player / repeated entries can't keep resetting the next tick and
+    // starve the FSM. Steady state is unchanged - only the next tick moves; checkPrioritySpeed settles
+    // the cadence on the following tick. Like the other (re)schedule paths it only touches the
+    // scheduler, never calls updateState directly, so the single-thread-per-bot invariant holds.
+    public synchronized void nudgeSoon(long initialDelayMs) {
+        if (!getRunning() || state == BotState.TRADING || state == BotState.FINISHED) {
+            return; // don't disrupt a trade or a shutting-down bot
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastNudgeMs < NUDGE_DEBOUNCE_MS) {
+            return;
+        }
+        lastNudgeMs = now;
+
+        long period = getRandomDelay(); // steady state stays 2-6s; only the next tick is pulled forward
+        this.currentDelay = period;
+        if (scheduler == null || scheduler.isShutdown() || scheduler.isTerminated()) {
+            return;
+        }
+        if (scheduledTask != null && !scheduledTask.isCancelled()) {
+            scheduledTask.cancel(false); // let any in-flight tick finish; never interrupt it
+        }
+        scheduledTask = scheduler.scheduleWithFixedDelay(
+                tickRunnable, initialDelayMs, period, TimeUnit.MILLISECONDS);
     }
 
     public void checkPrioritySpeed() {

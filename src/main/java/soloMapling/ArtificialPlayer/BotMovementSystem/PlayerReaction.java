@@ -23,15 +23,13 @@ public class PlayerReaction {
     private static final String DIALOGUE_PATH = "HenesysBotDialogue.yaml";
     private static final String BOT_TYPE = "HenesysBot";
     private static final String DIALOGUE_NODE = "PlayerReaction";
-    private static List<String> ambientLines;
     private static List<Integer> ambientEmotes;
 
     private static void loadDialogue() {
-        if (ambientLines != null) return;
+        if (ambientEmotes != null) return;
         BotDialogueHandler.DialogueConstructor dialog =
                 BotDialogueHandler.getDialogueCon(DIALOGUE_PATH, BOT_TYPE, DIALOGUE_NODE);
         if (dialog != null) {
-            ambientLines = dialog.getDialogue();
             ambientEmotes = dialog.getEmotes();
         }
     }
@@ -85,16 +83,24 @@ public class PlayerReaction {
         botFaceTowardsPoint(bot, player.getPosition());
         BotHelpers.sleepAmountSeconds(400);
 
-        // Pick a reaction: emote, chat, or both
+        // Pick a reaction: emote, chat, or both. Chat is token-resolved against the bot and the player
+        // so {PLAYER_*}/{MAP}/... never reach chat raw; if nothing resolves we emote instead.
+        String line = getResolvedReactionLine(bot, player);
         int pick = random.nextInt(3);
         if (pick == 0) {
             BotEmote(bot, getRandomAmbientEmote());
         } else if (pick == 1) {
-            BotFullChat(bot, getRandomAmbientLine());
+            if (line != null) {
+                BotFullChat(bot, line);
+            } else {
+                BotEmote(bot, getRandomAmbientEmote());
+            }
         } else {
             BotEmote(bot, getRandomAmbientEmote());
             BotHelpers.sleepAmountSeconds(500);
-            BotFullChat(bot, getRandomAmbientLine());
+            if (line != null) {
+                BotFullChat(bot, line);
+            }
         }
 
         // Brief pause before resuming movement (500ms - 2s)
@@ -114,16 +120,23 @@ public class PlayerReaction {
             int pick = random.nextInt(2);
             if (pick == 0) {
                 BotEmote(bot, getRandomAmbientEmote());
+                return;
+            }
+            // No specific player here, so {PLAYER_*} lines drop and we fall back to a token-free line.
+            String line = getResolvedReactionLine(bot, null);
+            if (line != null) {
+                BotFullChat(bot, line);
             } else {
-                BotFullChat(bot, getRandomAmbientLine());
+                BotEmote(bot, getRandomAmbientEmote());
             }
         });
     }
 
-    private static String getRandomAmbientLine() {
-        loadDialogue();
-        if (ambientLines == null || ambientLines.isEmpty()) return "...";
-        return ambientLines.get(random.nextInt(ambientLines.size()));
+    // Resolve a PlayerReaction line's {TOKEN}s against the bot (self) and player (nullable). Re-rolls
+    // unresolvable lines and falls back to a token-free one, so a raw {TOKEN} never reaches chat;
+    // returns null when nothing speakable remains (caller emotes instead).
+    private static String getResolvedReactionLine(Character bot, Character player) {
+        return BotDialogueHandler.getRandomResolvedLine(DIALOGUE_PATH, BOT_TYPE, DIALOGUE_NODE, bot, player);
     }
 
     private static int getRandomAmbientEmote() {

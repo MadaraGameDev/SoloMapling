@@ -1442,6 +1442,11 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     public synchronized void announceBossHpBar(Monster mm, final int mobHash, Packet packet) {
+        // The shared headless bot client has no bound player; it's on the map as a
+        // character (so it's hit by the boss-HP broadcast) but has no HP bar to track.
+        if (player == null) {
+            return;
+        }
         long timeNow = System.currentTimeMillis();
         int targetHash = player.getTargetHpBarHash();
 

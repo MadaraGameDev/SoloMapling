@@ -927,6 +927,16 @@ public class StatEffect {
         return applyTo(chr, chr, true, pos, false, 1);
     }
 
+    /**
+     * Grant this buff to {@code target} as if cast by {@code caster}, via the
+     * internal non-primary apply path: the target gets the real, working buff
+     * (stat + icons + foreign aura) with NO MP cost and NO cast animation on them.
+     * Lets SoloMapling bots hand party/support buffs to nearby players and bots.
+     */
+    public boolean applyToTarget(Character caster, Character target) {
+        return applyTo(caster, target, false, null, false, 1);
+    }
+
     // primary: the player caster of the buff
     private boolean applyTo(Character applyfrom, Character applyto, boolean primary, Point pos, boolean useMaxRange, int affectedPlayers) {
         if (skill && (sourceid == GM.HIDE || sourceid == SuperGM.HIDE)) {
@@ -1215,6 +1225,19 @@ public class StatEffect {
         }
         Rectangle bounds = new Rectangle(mylt.x, mylt.y, myrb.x - mylt.x, myrb.y - mylt.y);
         return bounds;
+    }
+
+    /**
+     * The skill's WZ attack rectangle, anchored at {@code from} and mirrored for facing
+     * (the same geometry the skill's own hit detection uses), or null if the skill defines
+     * no lt/rb range. Lets SoloMapling bots size their attack reach from real game data
+     * instead of hand-tuned boxes.
+     */
+    public Rectangle getAttackBox(Point from, boolean facingLeft) {
+        if (lt == null || rb == null) {
+            return null;
+        }
+        return calculateBoundingBox(from, facingLeft);
     }
 
     public int getBuffLocalDuration() {
@@ -1545,7 +1568,7 @@ public class StatEffect {
         return false;
     }
 
-    private boolean isPartyBuff() {
+    public boolean isPartyBuff() {
         if (lt == null || rb == null) {
             return false;
         }

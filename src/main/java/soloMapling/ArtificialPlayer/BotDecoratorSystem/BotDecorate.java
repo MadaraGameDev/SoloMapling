@@ -132,6 +132,14 @@ public class BotDecorate {
 
         // Randomly select a base class (Warrior, Magician, Bowman, or Thief)
         int baseClass = (int) (Math.random() * 4) + 1;
+        return selectJobForClass(baseClass, level);
+    }
+
+    public static int selectJobForClass(int baseClass, int level) {
+        // Beginner for levels 1-9
+        if (level < 10) {
+            return 0; // BEGINNER
+        }
 
         // First job advancement (levels 10-29)
         if (level < 30) {
@@ -296,6 +304,38 @@ public class BotDecorate {
         // NX cosmetic layer - runs on every bot regardless of which equip path
         // it took. Its own 30% base gate decides whether the bot actually gets
         // any NX pieces.
+        BotDecorateNX.apply(bot);
+    }
+
+    public static void setBotVariables(Character bot, int baseClass, int minLevel, int maxLevel) {
+        BotTier tier = getRandomTier();
+        bot.setTier(tier);
+        // generateBotLevel requires min < max; an exact-level spawn pins both ends.
+        int level = (minLevel >= maxLevel) ? minLevel : generateBotLevel(tier, minLevel, maxLevel);
+        int job = selectJobForClass(baseClass, level);
+        bot.setGender(selectRandomGender());
+        bot.setLevel(level);
+        bot.setJob(Job.getById(job));
+
+        BotDecorateBody.decorateBotBody(bot);
+
+        // Level 1-9 beginners get curated starter gear and nothing else (no
+        // class-aware pass, no deferred queue, no NX overlay) so they read as
+        // plain newbies. Uses explicit item ids, so the cache state doesn't matter.
+        if (BeginnerEquip.isBeginner(bot)) {
+            BeginnerEquip.apply(bot);
+            return;
+        }
+
+        if (EquipMetadataCache.isInitialized()) {
+            BotDecorateEquips.decorateBotEquips(bot);
+        } else {
+            // Cache not ready (env still booting): dress generically now and defer
+            // the full class-aware pass - same fallback the random path uses.
+            QuickEquip.apply(bot);
+            BotDecorationQueue.addBot("default", bot.getId());
+        }
+
         BotDecorateNX.apply(bot);
     }
 

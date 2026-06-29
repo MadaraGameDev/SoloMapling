@@ -188,6 +188,9 @@ public class MapId {
     public static final int ANT_TUNNEL_2 = 105050100;
     public static final int CAVE_OF_MUSHROOMS_BASE = 105050101;
     public static final int SLEEPY_DUNGEON_4 = 105040304;
+    public static final int ANT_TUNNEL_PARK = 105070001; // deep rest junction → Cave of Evil Eye / Grave of Mushmom (training-bot deep hub)
+    public static final int PATH_OF_TIME_HUB = 220050300; // deep Ludibrium junction → Forgotten Path of Time / Clocktower (training-bot deep hub)
+    public static final int SHARP_CLIFF_I = 211040300; // deep El Nath junction → Sharp Cliff II / Wolf Territory / Forest of Dead Trees / Dead Mine (training-bot deep hub, reached from Ice Valley II via Jeff one-way)
     public static final int GOLEMS_CASTLE_RUINS_BASE = 105040320;
     public static final int SAHEL_2 = 260020600;
     public static final int HILL_OF_SANDSTORMS_BASE = 260020630;

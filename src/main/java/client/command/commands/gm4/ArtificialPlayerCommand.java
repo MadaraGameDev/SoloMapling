@@ -2,10 +2,15 @@ package client.command.commands.gm4;
 
 import client.Character;
 import client.Client;
+import client.Job;
 import client.command.Command;
 import client.inventory.BodyPart;
 import server.maps.MapleMap;
 import server.maps.Portal;
+import soloMapling.ArtificialPlayer.BotAttackSystem.BotAttackDriver;
+import soloMapling.ArtificialPlayer.BotAttackSystem.BotBuffConfig;
+import soloMapling.ArtificialPlayer.BotAttackSystem.BotBuffDriver;
+import soloMapling.ArtificialPlayer.BotAttackSystem.BotBuffEffects;
 import soloMapling.ArtificialPlayer.BotCommandsPack.MegaphoneCommands;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorateBody;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorateEquips;
@@ -17,6 +22,7 @@ import soloMapling.ArtificialPlayer.BotTypes.Blackjack.BlackjackDealerBot;
 import soloMapling.ArtificialPlayer.BotPartySystem.BotPartyCommands;
 import soloMapling.ArtificialPlayer.BotPartySystem.BotPartyQueue;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.QueueMonitor;
+import soloMapling.ArtificialPlayer.BotGeneration;
 import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.ArtificialPlayer.BotTypeManager;
@@ -24,6 +30,7 @@ import soloMapling.ArtificialPlayer.SocialHotPotatoManager;
 import soloMapling.server.ExecutorServiceManager;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botLoot;
@@ -61,11 +68,13 @@ import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.GAME_ZONE_HOST
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.DROP_GAME_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.HENESYS_JQ_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.TUTORIAL_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.TEST_ATTACK_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.convertBotType;
 import static soloMapling.ArtificialPlayer.BotTypeManager.manuallyStartBot;
 import static soloMapling.ArtificialPlayer.BotTypeManager.manuallyStopBot;
 import static soloMapling.DebugUtilities.debugprint;
 import static soloMapling.server.NXCodeManager.createCompleteNXCode;
+import static soloMapling.server.SoloMaplingUtilities.getMapleMapById;
 import static soloMapling.server.SoloMaplingUtilities.isInteger;
 
 public class ArtificialPlayerCommand extends Command {
@@ -82,6 +91,14 @@ public class ArtificialPlayerCommand extends Command {
             ExecutorServiceManager.getExecutorService().execute(() -> {
                 player.yellowMessage("Please input an integer for cid. Try !bot help");
             });
+            return;
+        }
+        // Class-spawn commands take string args (class name), so they can't go through
+        // the integer-based length dispatch below - handle them up front.
+        String first = params[0].toLowerCase();
+        if (first.equals("spawn") || first.equals("spawnatk")) {
+            boolean autoAttack = first.equals("spawnatk");
+            ExecutorServiceManager.getExecutorService().execute(() -> handleSpawn(params, autoAttack, c));
             return;
         }
         if (params.length == 1) {
@@ -135,6 +152,11 @@ public class ArtificialPlayerCommand extends Command {
             case "create":
                 BotTypeManager.createBots(c);
                 break;
+            case "dcmap":
+            case "dcallmap":
+            case "dchere":
+                removeBotsOnMyMap();
+                break;
             case "hint":
                 List<String> lstr = List.of("Hey", "Test", "Cho");
                 displayPlayerChatCommands(c.getPlayer(), lstr);
@@ -170,6 +192,26 @@ public class ArtificialPlayerCommand extends Command {
             case "meso":
                 testDropCommands(fakechar, c);
                 break;
+            case "buff": {
+                java.util.List<Integer> buffs = BotBuffConfig.buffsForJob(fakechar.getJob());
+                int casted = BotBuffDriver.forceBuff(fakechar);
+                player.yellowMessage("Buff " + fakechar.getName() + " lv" + fakechar.getLevel()
+                        + " (job " + fakechar.getJob() + "): cast " + casted + " of " + buffs.size()
+                        + " " + buffs + (buffs.isEmpty() ? " - this job has no buffs configured" : ""));
+                if (fakechar.getMapId() != player.getMapId()) {
+                    player.yellowMessage("Note: bot is on map " + fakechar.getMapId() + ", you are on "
+                            + player.getMapId() + " - the cast animation only shows to players on the bot's map.");
+                }
+                break;
+            }
+            case "attack": { // force the single-target attack
+                reportAttack(fakechar, BotAttackDriver.forceSingle(fakechar), "attack");
+                break;
+            }
+            case "attackaoe": { // force the AoE attack (or report the bot has none)
+                reportAttack(fakechar, BotAttackDriver.forceAoe(fakechar), "attackaoe");
+                break;
+            }
             case "dicebot":
                 DICE_BOT.createAndSetBot(fakechar);
                 break;
@@ -221,6 +263,12 @@ public class ArtificialPlayerCommand extends Command {
             case "jqbot":
             case "henesysjqbot":
                 HENESYS_JQ_BOT.createAndSetBot(fakechar);
+                break;
+            case "trainbot":
+            case "trainingbot":
+                // convert (stop→set→start) so the macro FSM ticks immediately on an already-running bot
+                convertBotType(fakechar, BotTypeManager.BotType.TRAINING_BOT);
+                player.yellowMessage("Bot " + fakechar.getId() + " is now a TrainingBot (town↔grind loop).");
                 break;
             case "manualstart":
                 manuallyStartBot(fakechar);
@@ -356,6 +404,55 @@ public class ArtificialPlayerCommand extends Command {
         player.yellowMessage("Command: " + input2 + ", arg: " + input3);
 
         switch (input.toLowerCase()) {
+            case "castbuff":
+                boolean applied = BotBuffDriver.castSkill(fakechar, input3);
+                player.yellowMessage("castbuff " + fakechar.getName() + " (job " + fakechar.getJob()
+                        + ") skill " + input3 + " -> " + (applied ? "applied" : "FAILED (no such skill/effect)"));
+                if (fakechar.getMapId() != player.getMapId()) {
+                    player.yellowMessage("Note: bot is on map " + fakechar.getMapId() + ", you are on "
+                            + player.getMapId() + " - the cast animation only shows to players on the bot's map.");
+                }
+                break;
+            case "givebuff":
+                // Bot casts (visual) and hands the REAL buff to you (the GM player).
+                BotBuffEffects.givePartyBuff(fakechar, input3, java.util.List.of(player));
+                player.yellowMessage("givebuff: " + fakechar.getName() + " -> you (skill " + input3 + ")");
+                if (fakechar.getMapId() != player.getMapId()) {
+                    player.yellowMessage("Note: bot is on map " + fakechar.getMapId() + ", you are on "
+                            + player.getMapId() + " - you still get the buff, but the bot's cast animation only shows on its map.");
+                }
+                break;
+            case "extbuff":
+                // Bot casts (visual) and hands you the buff with a 10-minute duration.
+                BotBuffEffects.giveExtendedBuff(fakechar, input3, java.util.List.of(player),
+                        BotBuffEffects.EXTENDED_DURATION_MS);
+                player.yellowMessage("extbuff: " + fakechar.getName() + " -> you (skill " + input3 + ", 10 min)");
+                if (fakechar.getMapId() != player.getMapId()) {
+                    player.yellowMessage("Note: bot is on map " + fakechar.getMapId() + ", you are on "
+                            + player.getMapId() + " - you still get the buff, but the bot's cast animation only shows on its map.");
+                }
+                break;
+            case "setlevel":
+                if (input3 < 1 || input3 > 200) {
+                    player.yellowMessage("setlevel: level must be 1-200");
+                    break;
+                }
+                fakechar.setLevel(input3);
+                player.yellowMessage("Set " + fakechar.getName() + " to level " + input3);
+                break;
+            case "setclass":
+            case "setjob": {
+                Job newJob = Job.getById(input3);
+                if (newJob == null) {
+                    player.yellowMessage("setjob: unknown job id " + input3
+                            + " (e.g. 100 warrior, 200 magician, 230 cleric, 232 bishop, 412 nightlord)");
+                    break;
+                }
+                fakechar.setJob(newJob);
+                player.yellowMessage("Set " + fakechar.getName() + " to job " + newJob + " (" + input3
+                        + ") - buffs: " + BotBuffConfig.buffsForJob(newJob));
+                break;
+            }
             case "equip":
                 /*
                 1702150 - NX weapon sword mercury
@@ -448,6 +545,148 @@ public class ArtificialPlayerCommand extends Command {
 
     }
 
+    private static final int SPAWN_MAX_COUNT = 20;
+
+    /**
+     * Backs {@code !bot spawn} / {@code !bot spawnatk}: spawn N geared bots of a chosen
+     * class + job tier at the GM's position for attack testing. {@code spawnatk} also
+     * turns each into a TestAttackBot that auto-swings at nearby mobs.
+     *
+     * params: [0]=spawn|spawnatk  [1]=class  [2]=jobtier(1-4) or exact level(10-200)  [3]=count(optional)
+     */
+    private static void handleSpawn(String[] params, boolean autoAttack, Client c) {
+        String verb = params[0].toLowerCase();
+        if (params.length < 3) {
+            player.yellowMessage("Usage: !bot " + verb
+                    + " <warrior|mage|bow|thief> <jobtier 1-4 | level 10-200> [count]");
+            return;
+        }
+
+        Integer baseClass = parseGenre(params[1]);
+        if (baseClass == null) {
+            player.yellowMessage("Unknown class '" + params[1] + "'. Use warrior | mage | bow | thief.");
+            return;
+        }
+
+        if (!isInteger(params[2])) {
+            player.yellowMessage("Second arg must be a job tier (1-4) or an exact level (10-200).");
+            return;
+        }
+        int[] band = resolveLevelBand(Integer.parseInt(params[2]));
+        if (band == null) {
+            player.yellowMessage("Second arg must be job tier 1-4 or level 10-200 (got " + params[2] + ").");
+            return;
+        }
+
+        int count = 1;
+        if (params.length >= 4 && isInteger(params[3])) {
+            count = Integer.parseInt(params[3]);
+        }
+        if (count < 1) {
+            count = 1;
+        }
+        if (count > SPAWN_MAX_COUNT) {
+            count = SPAWN_MAX_COUNT;
+            player.yellowMessage("Count capped at " + SPAWN_MAX_COUNT + ".");
+        }
+
+        MapleMap map = getMapleMapById(c.getPlayer().getMapId());
+        Point pos = c.getPlayer().getPosition();
+
+        List<Integer> spawned = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            int botId = BotGeneration.createBot(pos, map, baseClass, band[0], band[1]);
+            if (autoAttack) {
+                Character fakechar = BotHelpers.getCharFromChannelStorage(botId);
+                if (fakechar != null) {
+                    TEST_ATTACK_BOT.createAndSetBot(fakechar);
+                    BotTypeManager.startAttackTestBot(fakechar);
+                }
+            }
+            spawned.add(botId);
+        }
+
+        String bandDesc = (band[0] == band[1]) ? ("lv" + band[0]) : ("lv" + band[0] + "-" + band[1]);
+        player.yellowMessage("Spawned " + spawned.size() + " " + genreName(baseClass) + " bot(s) "
+                + bandDesc + (autoAttack ? " [auto-attack]" : "") + ": cids " + spawned);
+        if (!autoAttack) {
+            player.yellowMessage("Drive with !bot attack <cid> / !bot attackaoe <cid>.");
+        }
+    }
+
+    /** Map a class-genre word to the base-class id used by the decorator (1-4), or null if unknown. */
+    private static Integer parseGenre(String s) {
+        switch (s.toLowerCase()) {
+            case "warrior", "war", "fighter" -> { return 1; }
+            case "mage", "mag", "magician", "wizard" -> { return 2; }
+            case "bow", "bowman", "archer", "bowmen" -> { return 3; }
+            case "thief", "sin", "rogue", "assassin" -> { return 4; }
+            default -> { return null; }
+        }
+    }
+
+    private static String genreName(int baseClass) {
+        return switch (baseClass) {
+            case 1 -> "warrior";
+            case 2 -> "mage";
+            case 3 -> "bowman";
+            case 4 -> "thief";
+            default -> "unknown";
+        };
+    }
+
+    /**
+     * Resolve the second spawn arg into an inclusive [min,max] level band:
+     * 1-4 = job tier (1st 10-29, 2nd 30-69, 3rd 70-119, 4th 120-200);
+     * 10-200 = an exact level (band collapses to that level). Returns null if neither.
+     */
+    private static int[] resolveLevelBand(int tierOrLevel) {
+        switch (tierOrLevel) {
+            case 1: return new int[]{10, 29};
+            case 2: return new int[]{30, 69};
+            case 3: return new int[]{70, 119};
+            case 4: return new int[]{120, 200};
+            default:
+                if (tierOrLevel >= 10 && tierOrLevel <= 200) {
+                    return new int[]{tierOrLevel, tierOrLevel}; // exact level
+                }
+                return null;
+        }
+    }
+
+    /** Disconnect every bot currently on the command user's map (leaves bots on other maps alone). */
+    private static void removeBotsOnMyMap() {
+        if (player == null || player.getMap() == null) {
+            return;
+        }
+        // Snapshot first: removeBotFromServer mutates the map's live character collection.
+        List<Character> bots = new ArrayList<>();
+        for (Character chr : player.getMap().getCharacters()) {
+            if (BotHelpers.isBot(chr)) {
+                bots.add(chr);
+            }
+        }
+        for (Character bot : bots) {
+            removeBotFromServer(bot);
+        }
+        player.yellowMessage("Removed " + bots.size() + " bot(s) from map " + player.getMapId() + ".");
+    }
+
+    /** Print the outcome of a forced bot attack ({@code verb} = "attack" / "attackaoe"). */
+    private static void reportAttack(Character fakechar, BotAttackDriver.AttackResult res, String verb) {
+        if (res.hit()) {
+            player.yellowMessage(verb + " " + fakechar.getName() + " lv" + fakechar.getLevel()
+                    + " -> hit '" + res.monsterName() + "' for " + res.damage()
+                    + (res.killed() ? " (KILLED)" : ""));
+        } else {
+            player.yellowMessage(verb + " " + fakechar.getName() + " -> no hit: " + res.reason());
+        }
+        if (fakechar.getMapId() != player.getMapId()) {
+            player.yellowMessage("Note: bot is on map " + fakechar.getMapId() + ", you are on "
+                    + player.getMapId() + " - the swing only shows to players on the bot's map.");
+        }
+    }
+
     private static void printHelp() {
         player.yellowMessage("---- Bot Commands (!bot) ----");
         player.yellowMessage("-- Creation & Lifecycle --");
@@ -455,9 +694,14 @@ public class ArtificialPlayerCommand extends Command {
         player.yellowMessage("!bot manualstart <cid>           - start bot manually");
         player.yellowMessage("!bot manualstop <cid>            - stop bot manually");
         player.yellowMessage("!bot disconnect/dc/remove <cid>  - remove bot from server");
+        player.yellowMessage("!bot dcmap/dchere                - remove ALL bots on your current map");
         player.yellowMessage("!bot masscreate <start> <end>    - create multiple bots");
         player.yellowMessage("!bot massmanualstart <s> <e>     - start multiple bots");
         player.yellowMessage("!bot massmanualstop <s> <e>      - stop multiple bots");
+        player.yellowMessage("-- Class Spawn (attack testing) --");
+        player.yellowMessage("!bot spawn <class> <tier> [n]    - spawn n geared bots, idle");
+        player.yellowMessage("!bot spawnatk <class> <tier> [n] - spawn n & auto-attack here");
+        player.yellowMessage("   class: warrior|mage|bow|thief  tier: 1-4 or exact lv 10-200  n<=20");
         player.yellowMessage("-- Set Bot Type --");
         player.yellowMessage("!bot fmbot <cid>                 - set as FM bot");
         player.yellowMessage("!bot scrollbot <cid>             - set as scroll bot");
@@ -483,6 +727,9 @@ public class ArtificialPlayerCommand extends Command {
         player.yellowMessage("!bot lootlocation <cid>          - loot at your position");
         player.yellowMessage("!bot lootownitems <cid>          - loot bot's own items");
         player.yellowMessage("!bot loottargetsitems <cid>      - loot your items");
+        player.yellowMessage("-- Combat --");
+        player.yellowMessage("!bot attack <cid>                - force single-target attack");
+        player.yellowMessage("!bot attackaoe <cid>             - force AoE attack (or says none)");
         player.yellowMessage("-- Appearance --");
         player.yellowMessage("!bot randombody <cid>            - random body decoration");
         player.yellowMessage("!bot randomequips <cid>          - random equip decoration");

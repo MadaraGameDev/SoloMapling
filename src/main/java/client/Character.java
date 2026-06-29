@@ -5292,6 +5292,37 @@ public class Character extends AbstractCharacterObject {
         return localstr;
     }
 
+    // ── GCMoveSystem (GreenCat dynamic movement): total move-speed / jump stat.
+    // base 100 + equip bonuses + active buff. Feeds BotMovementProfile.fromCharacter
+    // which selects the baked nav-graph profile bucket.
+    public int getTotalMoveSpeedStat() {
+        int total = 100;
+        for (Item item : getInventory(InventoryType.EQUIPPED)) {
+            if (item instanceof Equip equip) {
+                total += equip.getSpeed();
+            }
+        }
+        Integer speedBuff = getBuffedValue(BuffStat.SPEED);
+        if (speedBuff != null) {
+            total += speedBuff;
+        }
+        return Math.max(1, total);
+    }
+
+    public int getTotalJumpStat() {
+        int total = 100;
+        for (Item item : getInventory(InventoryType.EQUIPPED)) {
+            if (item instanceof Equip equip) {
+                total += equip.getJump();
+            }
+        }
+        Integer jumpBuff = getBuffedValue(BuffStat.JUMP);
+        if (jumpBuff != null) {
+            total += jumpBuff;
+        }
+        return Math.max(1, total);
+    }
+
     public int getTotalDex() {
         return localdex;
     }

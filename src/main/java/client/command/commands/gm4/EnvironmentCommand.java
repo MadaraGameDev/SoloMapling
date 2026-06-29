@@ -3,7 +3,11 @@ package client.command.commands.gm4;
 import client.Character;
 import client.Client;
 import client.command.Command;
+import server.maps.MapleMap;
 import server.maps.Portal;
+import soloMapling.ArtificialPlayer.BotGrindSystem.MapGrindProfile;
+import soloMapling.ArtificialPlayer.BotGrindSystem.Spot;
+import soloMapling.ArtificialPlayer.BotGrindSystem.SpotFinder;
 import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotTypeManager;
 import soloMapling.ArtificialPlayer.ConversationManager;
@@ -25,6 +29,7 @@ import static soloMapling.Environment.EnvironmentManager.getMainPlatformIds;
 import static soloMapling.Environment.EnvironmentManager.spawnBotsInFMEntrance;
 import static soloMapling.Environment.EnvironmentManager.spawnCasinoNpcs;
 import static soloMapling.Environment.EnvironmentManager.spawnFillerBots;
+import static soloMapling.Environment.EnvironmentManager.spawnScatteredTrainingBots;
 import static soloMapling.Environment.EnvironmentManager.spawnFillerBotsHenesys;
 import static soloMapling.Environment.EnvironmentManager.spawnFillerBotsHenesysMarket;
 import static soloMapling.Environment.EnvironmentManager.spawnFillerBotsHenesysPark;
@@ -34,6 +39,7 @@ import static soloMapling.Environment.EnvironmentManager.spawnFillerBotsPotionSh
 import static soloMapling.Environment.EnvironmentManager.convertRandomFillersToScrollBots;
 import static soloMapling.Environment.EnvironmentManager.spawnOPQBotsInLobby;
 import static soloMapling.Environment.EnvironmentManager.spawnGameZoneHostBots;
+import static soloMapling.Environment.EnvironmentManager.spawnAttackTestBots;
 import static soloMapling.Environment.EnvironmentManager.spawnBlackjackTables;
 import static soloMapling.Environment.EnvironmentManager.spawnGachaBotsHenesys;
 import static soloMapling.Environment.EnvironmentManager.spawnHenesysBots;
@@ -199,6 +205,15 @@ public class EnvironmentCommand extends Command {
                 spawnBlackjackTables();
                 player.yellowMessage("Blackjack Tables done.");
                 break;
+            case "attacktest":
+                player.yellowMessage("Spawning tier-1 attack test bots on Henesys Hunting Ground 1 (use !env attacktest 2/3/4 for other tiers)...");
+                spawnAttackTestBots(1);
+                player.yellowMessage("Attack test bots spawning. Stand on the map so mobs move into reach.");
+                break;
+            case "scattertest":
+            case "trainscatter":
+                spawnScatterTest(c, 30);
+                break;
             case "starthotpotato":
                 SocialHotPotatoManager.getInstance().start();
                 player.yellowMessage("Social Hot Potato started.");
@@ -225,6 +240,10 @@ public class EnvironmentCommand extends Command {
                 spawnCasinoNpcs();
                 player.yellowMessage("Casino NPCs spawned on map 100000203.");
                 break;
+            case "grindprofile":
+            case "spotdump":
+                dumpGrindProfile(c);
+                break;
             default:
                 player.yellowMessage("Invalid command - Direct Command");
                 break;
@@ -248,6 +267,15 @@ public class EnvironmentCommand extends Command {
 
     public static void handleStringIntCommand(String input, int input2, Client c) {
         switch (input.toLowerCase()) {
+            case "attacktest":
+                player.yellowMessage("Spawning tier-" + input2 + " attack test bots on Henesys Hunting Ground 1...");
+                spawnAttackTestBots(input2);
+                player.yellowMessage("Attack test bots spawning. Stand on the map so mobs move into reach.");
+                return;
+            case "scattertest":
+            case "trainscatter":
+                spawnScatterTest(c, input2);
+                return;
             case "fillerbot":
                 Point p1 = new Point(-548, 154);
                 Point p2 = new Point(568, 154);
@@ -347,6 +375,8 @@ public class EnvironmentCommand extends Command {
         player.yellowMessage("!env spawnopqbots                - spawn OPQ lobby bots");
         player.yellowMessage("!env spawngzhbots                - spawn Game Zone Host bots");
         player.yellowMessage("!env spawnbjtables               - spawn Blackjack tables");
+        player.yellowMessage("!env attacktest                  - spawn per-class attack test bots on Henesys Hunting Ground 1");
+        player.yellowMessage("!env scattertest [count]         - scatter N training bots (def 30) on current map ground spots");
         player.yellowMessage("!env spawncasinonpc              - spawn casino NPC at player");
         player.yellowMessage("!env spawncasinonpcs             - spawn all casino NPCs on map");
         player.yellowMessage("!env spawnrpsnpc                 - spawn RPS NPC");
@@ -362,14 +392,58 @@ public class EnvironmentCommand extends Command {
         player.yellowMessage("!env getallplatforms             - get all available platforms");
         player.yellowMessage("!env getallmainplatforms         - get all main platforms");
         player.yellowMessage("!env getcharsonplatform <platId> - get chars on a platform");
+        player.yellowMessage("!env grindprofile                - dump this map's grind spot profile (calibrate spot tuning)");
         player.yellowMessage("-- Bot Control --");
         player.yellowMessage("!env chat <cid> <message>        - bot speaks in chat");
         player.yellowMessage("!env platformshuffle <cid> <id>  - move bot to platform");
         player.yellowMessage("!env platformshufflerandom <cid> - move bot to random platform");
     }
 
+    // Dry-run the organic ground-spot scatter (BotSpotPicker): spawn `count` training bots across the
+    // current map's reachable platforms, anchored at the GM's position. Lets you eyeball the spread the
+    // wave-8 training spawn uses without restarting the world.
+    private static void spawnScatterTest(Client c, int count) {
+        Character p = c.getPlayer();
+        MapleMap map = p.getMap();
+        Point from = p.getPosition();
+        p.yellowMessage("Scattering " + count + " training bots across map " + p.getMapId()
+                + " (anchored at your spot)...");
+        java.util.List<Integer> ids = spawnScatteredTrainingBots(map, from, count, 10, 55);
+        p.yellowMessage("Scatter spawn complete. " + ids.size() + " training bots placed"
+                + (ids.size() < count ? " (some fell back to your spot - nav graph not baked?)" : "") + ".");
+    }
+
     private static void spawnCasinoNpc(Client c) {
         NpcSpawner.spawnNpcAtPlayer(c.getPlayer(), CasinoChipConfig.CASINO_NPC_ID);
+    }
+
+    // Dump the grind spot profile for the GM's current map (SpotFinder.profile): spawn count, walkable
+    // span, density, regime, and the candidate spot list (anchor / radius / spawnCount + live mobs there).
+    // Used to calibrate DENSITY_HI/LO / GAP_LO / SPOT_RADIUS against real maps (§13.10 #1). Building it
+    // warms the nav graph for the map if it isn't baked yet.
+    private static void dumpGrindProfile(Client c) {
+        MapleMap map = c.getPlayer().getMap();
+        MapGrindProfile p = SpotFinder.profile(map);
+        if (p == null) {
+            player.yellowMessage("No grind profile (map null).");
+            return;
+        }
+        player.yellowMessage(String.format("=== grind profile: map %d (%s) ===", p.mapId(), p.regime()));
+        player.yellowMessage(String.format("walkable span: %d..%d (%dpx)  spawnPoints: %d  density: %.5f spawns/px (%.2f / screen)",
+                p.walkableMinX(), p.walkableMaxX(), p.walkableSpanX(), p.spawnPointCount(),
+                p.spawnDensity(), p.spawnDensity() * 1000.0));
+        player.yellowMessage(String.format("clusters/spots: %d  meanInterSpotGap: %dpx",
+                p.clusterCount(), p.meanInterSpotGapX()));
+        if (p.spots().isEmpty()) {
+            player.yellowMessage("  (no spots — nav graph unbaked or map has no spawn points)");
+            return;
+        }
+        for (int i = 0; i < p.spots().size(); i++) {
+            Spot s = p.spots().get(i);
+            int live = SpotFinder.liveHostilesWithin(map, s);
+            player.yellowMessage(String.format("  [%d] anchor (%d,%d) region %d  radius %d  spawnPts %d  liveMobs %d",
+                    i, s.anchor().x, s.anchor().y, s.regionId(), s.radius(), s.spawnCount(), live));
+        }
     }
 
 }

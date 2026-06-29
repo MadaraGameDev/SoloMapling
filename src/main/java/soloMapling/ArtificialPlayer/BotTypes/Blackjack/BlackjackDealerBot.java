@@ -327,6 +327,7 @@ public class BlackjackDealerBot extends BotSM {
         SocialCommands.BotSpeak(getChr(), handValue + ".");
         if (handValue > 21) {
             SocialCommands.BotSpeak(getChr(), "Too many. I Bust.");
+            triggerDealerReaction("DealerLoss");
         } else if (handValue == 21) {
             SocialCommands.BotSpeak(getChr(), "21 for me :P");
             SocialCommands.BotEmote(getChr(), 3);
@@ -357,14 +358,23 @@ public class BlackjackDealerBot extends BotSM {
             SocialCommands.BotSpeak(getChr(), String.join(" | ", lines));
         }
 
+        boolean dealerBusted = table.getDealer().getHandValue() > 21;
+        boolean anyPlayerWon = false;
         for (int i = 1; i < table.getPlayerCount(); i++) {
             BlackjackPlayer player = table.getPlayer(i);
             if (player.getHand().isEmpty()) continue;
             BlackjackRules.Outcome outcome = BlackjackRules.determineOutcome(player.getHand(), dealerHand);
+            if (outcome == BlackjackRules.Outcome.WIN || outcome == BlackjackRules.Outcome.BLACKJACK_WIN) {
+                anyPlayerWon = true;
+            }
             String dialogueNode = outcomeToDialogueNode(outcome);
             if (dialogueNode != null) {
                 triggerAIPlayerReaction(player, dialogueNode);
             }
+        }
+        // DealerLoss on normal player win; bust case already fires in handleDealerTurn
+        if (anyPlayerWon && !dealerBusted) {
+            triggerDealerReaction("DealerLoss");
         }
 
         table.setPhase(BlackjackTable.Phase.PAYOUT);
@@ -650,6 +660,17 @@ public class BlackjackDealerBot extends BotSM {
         if (random.nextDouble() < 0.30) {
             String line = dialog.getDialogue(random.nextInt(dialog.getDialogue().size()));
             SocialCommands.BotSpeak(player.getCharacter(), line);
+        }
+    }
+
+    private void triggerDealerReaction(String dialogueNode) {
+        BotDialogueHandler.DialogueConstructor dialog =
+                BotDialogueHandler.getDialogueCon(dialoguePath, botType, dialogueNode);
+        if (dialog == null) return;
+        SocialCommands.BotEmote(getChr(), dialog.getEmote());
+        if (random.nextDouble() < 0.55) {
+            String line = dialog.getDialogue(random.nextInt(dialog.getDialogue().size()));
+            SocialCommands.BotSpeak(getChr(), line);
         }
     }
 

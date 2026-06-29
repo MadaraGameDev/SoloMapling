@@ -21,6 +21,8 @@ import soloMapling.ArtificialPlayer.BotTypes.TutorialBot;
 import soloMapling.ArtificialPlayer.BotTypes.GameZoneHostBot;
 import soloMapling.ArtificialPlayer.BotTypes.DropGameBot;
 import soloMapling.ArtificialPlayer.BotTypes.SocialBot;
+import soloMapling.ArtificialPlayer.BotTypes.TestAttackBot;
+import soloMapling.ArtificialPlayer.BotTypes.TrainingBot;
 
 import java.awt.*;
 import java.util.List;
@@ -144,6 +146,20 @@ public class BotTypeManager {
                 SocialBot socialBot = new SocialBot(character);
                 CharacterStorage.addActiveBot(character.getId(), socialBot);
             }
+        },
+        TEST_ATTACK_BOT {
+            @Override
+            public void createAndSetBot(Character character) {
+                TestAttackBot bot = new TestAttackBot(character);
+                CharacterStorage.addActiveBot(character.getId(), bot);
+            }
+        },
+        TRAINING_BOT {
+            @Override
+            public void createAndSetBot(Character character) {
+                TrainingBot bot = new TrainingBot(character);
+                CharacterStorage.addActiveBot(character.getId(), bot);
+            }
         };
 
         public abstract void createAndSetBot(Character character);
@@ -167,6 +183,15 @@ public class BotTypeManager {
         BotSM bot = getBotById(fakechar.getId());
         bot.setRunning(false);
         bot.stopScheduledTask();
+    }
+
+    public static void startAttackTestBot(Character fakechar) {
+        BotSM bot = getBotById(fakechar.getId());
+        if (bot == null || bot.getRunning()) {
+            return;
+        }
+        bot.setRunning(true);
+        bot.startScheduledTask(2000L);
     }
 
     public static void convertBotType(Character fakechar, BotType botType) {

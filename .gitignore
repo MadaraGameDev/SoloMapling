@@ -4,6 +4,9 @@
 *.iml
 /target
 
+# GCMoveSystem runtime-generated nav/world graph caches (CWD-relative)
+/cache/
+
 # build files
 /build/
 /dist/
@@ -30,3 +33,6 @@ memory/MEMORY.md
 memory/no-auto-commits-solomapling.md
 src/main/java/soloMapling/Documents/Future Systems and Ideas.md
 src/main/java/soloMapling/Documents/Continuation Roadmap.md
+/src/main/java/soloMapling/Documents/3 Dev Diary 2 - Older stuff
+/cache
+/src/main/java/soloMapling/Documents/Legacy Docs

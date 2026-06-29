@@ -1,45 +1,30 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
+import client.BotClient;
 import client.Client;
-import server.TimerManager;
-import soloMapling.server.MethodScheduler;
-import tools.PacketCreator;
+import soloMapling.server.SoloMaplingConstants.GameConstants;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-import static soloMapling.Environment.EnvironmentManager.environmentLoadStartup;
-
-
+/**
+ * Single source of truth for the shared headless bot {@link Client}.
+ */
 public class BotClientHandler {
 
-    final static String clientIp = "127.0.0.1";
-    static final AtomicLong sessionId = new AtomicLong(6969);
-    static Client botClient = null;
+    private static volatile Client botClient = null;
 
-
-    public static void createBotClient(Client c) {
+    /**
+     * Constructs the one shared headless bot client. Idempotent — safe to call
+     * more than once (only the first call builds the instance). Must run after
+     * the channels exist, since the client reports {@code WORLD_SCANIA} /
+     * {@code CHANNEL_1} for routing.
+     */
+    public static synchronized void initHeadlessBotClient() {
         if (botClient == null) {
-            botClient = c;
-            TimerManager.getInstance().schedule(() -> disconnectFirstClient(c), 2000);
+            botClient = new BotClient(GameConstants.WORLD_SCANIA, GameConstants.CHANNEL_1);
         }
     }
 
+    /** The shared headless client every bot routes through. Null until {@link #initHeadlessBotClient()} runs. */
     public static Client getBotClient() {
         return botClient;
     }
-
-    public static void disconnectFirstClient(Client c) {
-        Character player = c.getPlayer();
-        for (int i = 0; i < 10; i++) {
-            player.yellowMessage("ATTENTION Please relog for Bot Client Creation - SoloMapling");
-        }
-        c.sendPacket(PacketCreator.serverNotice(1, "Please relog for Bot Client Creation - SoloMapling"));
-        player.getClient().disconnect(true, false);
-
-        // Setup environment // Comment this line if you want no bots.
-        MethodScheduler.runAfterDelay(() -> environmentLoadStartup(), 1000);
-
-    }
-
 }

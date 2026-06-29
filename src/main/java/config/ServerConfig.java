@@ -52,6 +52,9 @@ public class ServerConfig {
     //Other configuration
     public boolean SHUTDOWNHOOK;
 
+    //SoloMapling: spawn the bot world automatically on server startup (cold boot).
+    public boolean SPAWN_BOTS_ON_STARTUP;
+
     //Server Flags
     public boolean USE_CUSTOM_KEYSET;
     public boolean USE_DEBUG;

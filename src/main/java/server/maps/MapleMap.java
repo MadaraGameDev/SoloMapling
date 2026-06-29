@@ -1928,6 +1928,20 @@ public class MapleMap {
         }
     }
 
+    // Public read-only snapshot of every monster spawn point's position, from the static .wz spawn
+    // layout (the spawn lists themselves stay private). Used by the bot grind-spot scoring to find
+    // which walkable ledges have the densest spawns.
+    public List<java.awt.Point> getMonsterSpawnPositions() {
+        List<java.awt.Point> positions = new ArrayList<>();
+        for (SpawnPoint sp : getAllMonsterSpawn()) {
+            java.awt.Point p = sp.getPosition();
+            if (p != null) {
+                positions.add(new java.awt.Point(p));
+            }
+        }
+        return positions;
+    }
+
     public void spawnAllMonsterIdFromMapSpawnList(int id) {
         spawnAllMonsterIdFromMapSpawnList(id, 1, false);
     }
@@ -2693,11 +2707,10 @@ public class MapleMap {
         return null;
     }
 
-    /*
+    // GCMoveSystem: restored to let the dynamic nav-graph baker enumerate portals.
     public Collection<Portal> getPortals() {
         return Collections.unmodifiableCollection(portals.values());
     }
-    */
 
     public void addPlayerPuppet(Character player) {
         for (Monster mm : this.getAllMonsters()) {
@@ -3092,6 +3105,37 @@ public class MapleMap {
 
     public FootholdTree getFootholds() {
         return footholds;
+    }
+
+    // ── GCMoveSystem (GreenCat dynamic movement) terrain model ──
+    // Populated by MapFactory from WZ (ladderRope / info.fs / info.swim). Read by the
+    // dynamic physics/nav engine off the LIVE map.
+    private final java.util.List<Rope> ropes = new java.util.ArrayList<>();
+    private float footholdSpeed = 1.0f;
+    private boolean swim = false;
+
+    public void addRope(Rope rope) {
+        ropes.add(rope);
+    }
+
+    public java.util.List<Rope> getRopes() {
+        return ropes;
+    }
+
+    public float getFootholdSpeed() {
+        return footholdSpeed;
+    }
+
+    public void setFootholdSpeed(float footholdSpeed) {
+        this.footholdSpeed = footholdSpeed;
+    }
+
+    public boolean isSwim() {
+        return swim;
+    }
+
+    public void setSwim(boolean swim) {
+        this.swim = swim;
     }
 
     public void setMapPointBoundings(int px, int py, int h, int w) {

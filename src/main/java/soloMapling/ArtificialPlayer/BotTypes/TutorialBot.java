@@ -359,8 +359,8 @@ public class TutorialBot extends BotSM {
         NXCodeManager.createCompleteNXCode(generatedNXCode2, 25000);
 
         Map<String, String> replacements = Map.of(
-                "%NX_CODE", generatedNXCode,
-                "%NX_CODE_2", generatedNXCode2
+                "%NX_CODE%", generatedNXCode,
+                "%NX_CODE_2%", generatedNXCode2
         );
         getDialogueHandler().executeBotDialogueWithReplacementStrings("GrantAdmin", replacements, TutorialBot.this);
 
@@ -424,7 +424,7 @@ public class TutorialBot extends BotSM {
 
     private void greetPlayer() {
         botFaceTowardsPoint(getChr(), getInteractors().getRespondant().getPosition());
-        Map<String, String> replacements = Map.of("%RESP_NAME", getInteractors().getRespondant().getName());
+        Map<String, String> replacements = Map.of("%RESP_NAME%", getInteractors().getRespondant().getName());
         getDialogueHandler().executeBotDialogueWithReplacementStrings("Greeting", replacements, TutorialBot.this);
     }
 
@@ -447,7 +447,7 @@ public class TutorialBot extends BotSM {
     }
 
     private void tutorial_1() {
-        Map<String, String> replacements = Map.of("%CHR_NAME", getChr().getName());
+        Map<String, String> replacements = Map.of("%CHR_NAME%", getChr().getName());
         getDialogueHandler().executeBotDialogueWithReplacementStrings("Tutorial_1", replacements, TutorialBot.this);
     }
 
@@ -501,7 +501,7 @@ public class TutorialBot extends BotSM {
             return 0;
         }
         String weaponName = convertItemIdToName(playersWeaponId);
-        Map<String, String> replacements = Map.of("%WPN_NAME", weaponName);
+        Map<String, String> replacements = Map.of("%WPN_NAME%", weaponName);
         getDialogueHandler().executeBotDialogueWithReplacementStrings("AnalyzePlayersWeapon", replacements, TutorialBot.this);
         return playersWeaponId;
     }
@@ -525,7 +525,7 @@ public class TutorialBot extends BotSM {
 
     private void lootDialog(int weaponId) {
         String weaponName = convertItemIdToName(weaponId);
-        Map<String, String> replacements = Map.of("%WPN_NAME", weaponName);
+        Map<String, String> replacements = Map.of("%WPN_NAME%", weaponName);
         getDialogueHandler().executeBotDialogueWithReplacementStrings("LootDialogue", replacements, TutorialBot.this);
         BotHelpers.sleepAmountSeconds(6000);
     }

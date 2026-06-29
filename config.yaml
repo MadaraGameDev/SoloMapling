@@ -203,6 +203,7 @@ server:
 
     #Other configuration
     SHUTDOWNHOOK: true
+    SPAWN_BOTS_ON_STARTUP: true         #SoloMapling: auto-populate the world with bots on server startup (no player/relog needed). Set false to disable bot spawning.
 
     #Server Flags
     USE_CUSTOM_KEYSET: false             #Enables auto-setup of the HeavenMS's custom keybindings when creating characters.
