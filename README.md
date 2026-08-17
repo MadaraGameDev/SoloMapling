@@ -132,13 +132,84 @@ Nine GM-level-4 command suites for testing and control. All have `help` subcomma
 
 Full reference: [Dev Commands Cheat Sheet](src/main/java/soloMapling/Documents/Dev%20Commands%20Cheat%20Sheet.md)
 
-## Relationship to Cosmic
+## Host Integration: Cosmic vs BeiDou
 
-[Cosmic](https://github.com/P0nk/Cosmic) handles all the foundational game logic — client networking, packet handling, map loading, NPC scripts, quests, combat, and persistence. SoloMapling is a layer built on top that uses Cosmic's character and map systems to inject autonomous bot behavior.
+SoloMapling is a **simulation framework**, not a standalone server. It always needs a MapleStory v83 host that owns networking, maps, characters, and persistence. There are two supported host models:
 
-The SoloMapling code lives primarily in its own package (`soloMapling/`) with minimal modifications to the Cosmic base — mainly hook points for bot registration, command dispatching, and event observation. Concretely, integrating the framework touched only **33 existing Cosmic files for a net +1,104 / −146 lines** — surgical hooks rather than a rewrite. The bulk of the additions to Cosmic's own packages are **11 self-contained GM command classes** (`!bot`, `!move`, `!env`, `!opq`, …, ~2,850 lines) under `client/command/commands/gm4/`, which are standalone dev tooling that *uses* the framework rather than modifying the engine. The original Cosmic readme is preserved at [Cosmic_README.md](Cosmic_README.md).
+| Host | Integration style | Where SoloMapling lives |
+|------|-------------------|-------------------------|
+| **[Cosmic](https://github.com/P0nk/Cosmic)** (this repo's historical tree) | In-tree: `soloMapling/` compiled into the Cosmic jar; small surgical hooks in Cosmic packages | `src/main/java/soloMapling/` |
+| **[BeiDou-Server](https://github.com/BeiDouMS/BeiDou-Server)** | Out-of-process plugin jar via SPI (`ServerExtension`) | Built as `solomapling-plugin` inside BeiDou; loaded from `gms-server/plugins/` |
+
+Both hosts still need a few base hooks (bot client, map/trade/merchant awareness, command bridge, etc.). The plugin model does **not** remove those hooks — it isolates the **framework bulk** so SoloMapling can be upgraded/disabled without rebuilding the whole game jar every time.
+
+```
+                    ┌─────────────────────────┐
+                    │   MapleStory v83 client │
+                    └───────────┬─────────────┘
+                                │ GMS protocol
+          ┌─────────────────────┴─────────────────────┐
+          │              Host server                   │
+          │  Cosmic (in-tree)  or  BeiDou (SPI host)  │
+          │  characters / maps / packets / DB          │
+          └─────────────────────┬─────────────────────┘
+                                │ HostRuntime API (BeiDou)
+                                │ or direct package calls (Cosmic)
+          ┌─────────────────────┴─────────────────────┐
+          │              SoloMapling                   │
+          │  BotSM · Environment waves · FM · Training │
+          └───────────────────────────────────────────┘
+```
+
+### Cosmic (in-tree)
+
+[Cosmic](https://github.com/P0nk/Cosmic) handles client networking, packet handling, map loading, NPC scripts, quests, combat, and persistence. SoloMapling sits on top and injects autonomous bots as real `Character` objects.
+
+Historically this meant: framework under `soloMapling/`, plus **~33 Cosmic files** touched for hooks (+1,104 / −146 lines), plus **11 GM command classes** under `client/command/commands/gm4/`. The original Cosmic readme is preserved at [Cosmic_README.md](Cosmic_README.md).
+
+### BeiDou (plugin + host runtime)
+
+BeiDou (Cosmic-derived, Spring Boot + Netty) exposes a small **extension SPI**:
+
+| Piece | Role |
+|-------|------|
+| `extension-api` | Shared contracts: `ServerExtension`, `HostRuntime`, config / event bus / command registry |
+| BeiDou `org.gms.extension.runtime` | Host implementation + `ExtensionLoader` (`ServiceLoader` over `plugins/*.jar`) |
+| `solomapling-plugin` | Full SoloMapling framework packaged as a jar; entry `SoloMaplingExtension` |
+
+**Load order on BeiDou:** Spring Boot starts → `ServerManager` builds `BeiDouHostRuntime` and loads plugins → `Server.init()` → `notifyServerReady()` → plugin `onServerReady()` → optional `EnvironmentManager.environmentLoadStartup()`.
+
+**Config (BeiDou `application.yml`):**
+
+```yaml
+solomapling:
+  plugins-enabled: true
+  plugins-dir: plugins          # relative to gms-server working directory
+  spawn-bots-on-startup: true   # run EnvironmentManager waves after ServerReady
+```
+
+**Build & install plugin (from BeiDou repo):**
+
+```bash
+cd /path/to/BeiDou-Server
+mvn -pl extension-api,gms-server,solomapling-plugin -am package -DskipTests
+cp solomapling-plugin/target/solomapling-plugin-*-SNAPSHOT.jar gms-server/plugins/
+
+cd gms-server   # working directory MUST be gms-server (wz/scripts + FS resources)
+java -Xmx4g -Dspring.config.location=src/main/resources/application.yml \
+  -jar target/BeiDou-boot.jar
+```
+
+Notes specific to the BeiDou plugin path:
+
+- Runnable fat jar is **`BeiDou-boot.jar`**; thin `BeiDou.jar` is for compile-time dependency of the plugin module.
+- Bot clone template character is named **`fmbot`** (Flyway migration on BeiDou), not a hard-coded character id.
+- Registered GM commands via HostCommandRegistry (GM ≥ 4): `!smping`, `!env`, `!bot`, `!move`, `!fmbot`, `!gcmove`.
+- This repo's `beidou-plugin/` directory is a **thin SPI stub / pointer** only — the production plugin sources live under BeiDou's `solomapling-plugin/`. Upstream framework edits still happen in SoloMapling `src/main/java/soloMapling/`, then sync into BeiDou when shipping a host plugin build. See [beidou-plugin/README.md](beidou-plugin/README.md).
 
 ## Requirements & Setup
+
+### Cosmic host (this repository)
 
 - Java 21 (Amazon Corretto recommended)
 - MySQL 8+
@@ -151,6 +222,10 @@ The SoloMapling code lives primarily in its own package (`soloMapling/`) with mi
 4. Run: `launch.bat` (Windows) or via IDE with main class `net.server.Server`.
 
 The SoloMapling environment starts automatically on server boot and populates the world with bots. The first real player that logs in after a fresh server start must re-log (5-second detour) because the bots need a Client address to use. There is currently no workaround for this.
+
+### BeiDou host
+
+Use BeiDou's JDK 21 + MySQL 8 + Maven toolchain. Follow the plugin build/run steps in the section above (and BeiDou's root README **Extension Runtime / SoloMapling** section). Keep the JVM working directory at `gms-server`.
 
 ## Project Structure
 

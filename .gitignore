@@ -2,7 +2,7 @@
 .idea/*
 !.idea/codeStyles/
 *.iml
-/target
+**/target/
 
 # GCMoveSystem runtime-generated nav/world graph caches (CWD-relative)
 /cache/
