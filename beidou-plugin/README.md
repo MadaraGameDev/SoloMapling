@@ -74,3 +74,13 @@ Bot wave counts and TrainingBot spawn hubs are YAML-driven via
 
 In-game: `!env population show|reload` (GM ≥ 4). Training field maps are still auto-discovered from each hub — list hubs, not every field map.
 
+### Where the YAML lives at runtime
+
+Do **not** ship it inside `BeiDou-boot.jar`. Load order:
+
+1. `solomapling.population-config` (optional path in `application.yml`)
+2. `gms-server/src/main/java/soloMapling/Environment/EnvironmentPopulation.yaml` (cwd must be `gms-server`)
+3. Classpath inside `plugins/solomapling-plugin-*.jar`
+
+The FS path wins over the plugin jar when both exist.
+
