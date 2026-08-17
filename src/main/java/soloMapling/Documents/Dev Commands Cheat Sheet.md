@@ -339,6 +339,8 @@ Environment startup + platform / foothold / portal introspection + NPC spawning.
 |---|---|
 | `help` | Print the full `!env` command reference in-game. |
 | `perf` | **Bot-system health readout** (`BotPerfStats.report`): threads, heap, macro/movement tick rates, idle broadcasts, nudges, combat sweep, tick-wheel size/lag/throttle, bot + tier counts. Run twice a few seconds apart for live rates. |
+| `population show` / `pop show` | Dump `EnvironmentPopulation.yaml` source, `scale`, training totals, enabled waves. |
+| `population reload` / `pop reload` | Re-read `EnvironmentPopulation.yaml` (waves + `town_presence.towns`) without restart. |
 | `attacktest` | Spawn tier-1 per-class attack test bots on Henesys Hunting Ground 1 (`!env attacktest <2\|3\|4>` for other tiers). |
 | `scattertest` / `trainscatter` | Scatter 30 training bots on your current map's ground spots (`!env scattertest <n>` for other counts — the scale-test harness). |
 | `grindprofile` / `spotdump` | Dump the grind-spot scoring profile for your current map (spot list, density scores, claims). |
