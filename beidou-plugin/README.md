@@ -59,3 +59,18 @@ Bot clone template is the character named **`fmbot`** (Flyway `V1.9.3` on BeiDou
 - This `beidou-plugin/` tree is intentionally a stub so the SoloMapling branch documents the BeiDou host integration without shipping a second incomplete jar.
 
 See also the root [README.md](../README.md) section **Host Integration: Cosmic vs BeiDou**.
+
+## Population configuration (BeiDou / plugin)
+
+Bot wave counts and TrainingBot spawn hubs are YAML-driven via
+`EnvironmentPopulation.yaml` (see BeiDou `solomapling-plugin/.../Environment/CONFIG.md`).
+
+| Knob | Where |
+|------|--------|
+| Wave toggles / FM / Henesys / merchant counts / `scale` | `EnvironmentPopulation.yaml` |
+| TrainingBot hub map + count + level band | `waves.training.cohorts` in that file |
+| Town ambient SocialBot / wanderers | `TownPresence.yaml` |
+| Master on/off at boot | BeiDou `application.yml` → `solomapling.spawn-bots-on-startup` |
+
+In-game: `!env population show|reload` (GM ≥ 4). Training field maps are still auto-discovered from each hub — list hubs, not every field map.
+
