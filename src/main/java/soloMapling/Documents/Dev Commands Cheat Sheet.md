@@ -342,7 +342,7 @@ Environment startup + platform / foothold / portal introspection + NPC spawning.
 | `attacktest` | Spawn tier-1 per-class attack test bots on Henesys Hunting Ground 1 (`!env attacktest <2\|3\|4>` for other tiers). |
 | `scattertest` / `trainscatter` | Scatter 30 training bots on your current map's ground spots (`!env scattertest <n>` for other counts — the scale-test harness). |
 | `grindprofile` / `spotdump` | Dump the grind-spot scoring profile for your current map (spot list, density scores, claims). |
-| `townpresence reload` / `tp reload` | Re-read `TownPresence.yaml` from disk (apply YAML edits without a server restart). |
+| `townpresence reload` / `tp reload` | Re-read `waves.town_presence.towns` from `EnvironmentPopulation.yaml` (apply YAML edits without a server restart). Same file as `!env population reload`. |
 | `townpresence spawn [map n lo hi]` | Spawn a town's ambient SocialBot cohort at anchor-weighted spots; no args = spawn every town in the YAML (stationed + wanderers). |
 | `townpresence here [count]` | Dry-run: spawn `count` (default 10) stationed SocialBots on your current map. |
 | `townpresence wander [map n lo hi]` | Spawn roaming TownWandererBots (no map = your current map, default 5) — the generic non-Henesys roamers. |

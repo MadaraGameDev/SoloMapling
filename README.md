@@ -26,7 +26,7 @@ The framework is purely server-side — no client modifications required. Bots a
 | [Dev Commands Cheat Sheet](src/main/java/soloMapling/Documents/Dev%20Commands%20Cheat%20Sheet.md) | All in-game GM dev commands (`!bot`, `!move`, `!env`, `!opq`, …) |
 | [FreeMarket and ItemPool Architecture](src/main/java/soloMapling/Documents/FreeMarket%20and%20ItemPool%20Architecture.txt) | Shop generation pipeline, tier/version system, economy engine, haggling |
 | [Environment and World Startup](src/main/java/soloMapling/Documents/Environment%20and%20World%20Startup.md) | 7-wave world initialization, spawn choreography, platform system, casino setup |
-| [Population config (YAML)](src/main/java/soloMapling/Environment/CONFIG.md) | `EnvironmentPopulation.yaml` — wave counts, `scale`, TrainingBot hubs |
+| [Population config (YAML)](src/main/java/soloMapling/Environment/CONFIG.md) | `EnvironmentPopulation.yaml` — wave counts, `scale`, TrainingBot hubs, town ambient (`town_presence.towns`) |
 | [Movement Recording & Pathfinding](src/main/java/soloMapling/Documents/Movement-Recording.md) | How to record bot movement, path diagrams, and pathfinder walkthrough videos |
 | [Logging and Observability](src/main/java/soloMapling/Documents/Logging%20and%20Observability.md) | BotLog, debug utilities, the in-game MMC operator console, queue/event monitors |
 | [Cosmic README](Cosmic_README.md) | The original readme for the underlying Cosmic server emulator |
@@ -206,7 +206,7 @@ Notes specific to the BeiDou plugin path:
 - Runnable fat jar is **`BeiDou-boot.jar`**; thin `BeiDou.jar` is for compile-time dependency of the plugin module.
 - Bot clone template character is named **`fmbot`** (Flyway migration on BeiDou), not a hard-coded character id.
 - Registered GM commands via HostCommandRegistry (GM ≥ 4): `!smping`, `!env`, `!bot`, `!move`, `!fmbot`, `!gcmove`.
-- **Population is YAML-configured** on BeiDou: `EnvironmentPopulation.yaml` controls wave counts, `scale`, and TrainingBot spawn hubs; `TownPresence.yaml` controls town ambient bots. See BeiDou `solomapling-plugin/.../Environment/CONFIG.md`.
+- **Population is YAML-configured** on BeiDou: `EnvironmentPopulation.yaml` controls wave counts, `scale`, TrainingBot spawn hubs, and town ambient bots under `waves.town_presence.towns` (formerly a separate `TownPresence.yaml`). See BeiDou `solomapling-plugin/.../Environment/CONFIG.md`.
 - This repo's `beidou-plugin/` directory is a **thin SPI stub / pointer** only — the production plugin sources live under BeiDou's `solomapling-plugin/`. Upstream framework edits still happen in SoloMapling `src/main/java/soloMapling/`, then sync into BeiDou when shipping a host plugin build. See [beidou-plugin/README.md](beidou-plugin/README.md).
 
 ## Requirements & Setup

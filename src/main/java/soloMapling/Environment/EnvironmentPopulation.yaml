@@ -90,3 +90,59 @@ waves:
 
   town_presence:
     enabled: true
+    # count = stationed SocialBots; wanderers = roaming TownWandererBots.
+    # Per-map overrides (optional block form):
+    #   - map: 103000000
+    #     count: 14
+    #     pins: [{x: 300, y: 83}]
+    #     ban:  [{x1: 3200, x2: 4200}]
+    #     boost: [{x1: 900, x2: 1600, mult: 2.5}]
+    towns:
+      - name: Kerning City
+        level_lo: 15
+        level_hi: 70
+        wanderers: 6
+        maps:
+          - {map: 103000000, count: 14}
+
+      - name: Ellinia
+        level_lo: 10
+        level_hi: 60
+        wanderers: 5
+        maps:
+          - {map: 101000000, count: 10}
+
+      - name: Perion
+        level_lo: 10
+        level_hi: 65
+        wanderers: 5
+        maps:
+          - {map: 102000000, count: 10}
+
+      - name: Sleepywood
+        level_lo: 25
+        level_hi: 80
+        wanderers: 5
+        maps:
+          - {map: 105040300, count: 10}
+
+      - name: Orbis
+        level_lo: 30
+        level_hi: 86
+        wanderers: 6
+        maps:
+          - {map: 200000000, count: 12}
+
+      - name: Ludibrium
+        level_lo: 25
+        level_hi: 90
+        wanderers: 6
+        maps:
+          - {map: 220000000, count: 14}
+
+      - name: El Nath
+        level_lo: 50
+        level_hi: 85
+        wanderers: 5
+        maps:
+          - {map: 211000000, count: 10}

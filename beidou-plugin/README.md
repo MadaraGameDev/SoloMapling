@@ -68,8 +68,8 @@ Bot wave counts and TrainingBot spawn hubs are YAML-driven via
 | Knob | Where |
 |------|--------|
 | Wave toggles / FM / Henesys / merchant counts / `scale` | `EnvironmentPopulation.yaml` |
-| TrainingBot hub map + count + level band | `waves.training.cohorts` in that file |
-| Town ambient SocialBot / wanderers | `TownPresence.yaml` |
+| TrainingBot hub map + count + level band | `waves.training.cohorts` |
+| Town ambient SocialBot / wanderers | `waves.town_presence.towns` (same file; was `TownPresence.yaml`) |
 | Master on/off at boot | BeiDou `application.yml` → `solomapling.spawn-bots-on-startup` |
 
 In-game: `!env population show|reload` (GM ≥ 4). Training field maps are still auto-discovered from each hub — list hubs, not every field map.

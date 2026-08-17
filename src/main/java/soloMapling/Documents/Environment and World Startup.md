@@ -32,7 +32,7 @@ You can also trigger it manually with `!env loadenv` (GM level 4).
 | 6 | Specialty | Blackjack tables, Drop Game Bot + Drop Game spectators (Potion Shop), Pet Park social bots, random filler -> scroll bot conversions |
 | 7 | Late arrivals | OPQ lobby bots, final merchant batch |
 | 8 | Training bots | ~1,240 roaming grinders: job-coherent cohorts at town spawn portals (Lith Harbour, Henesys, Kerning, Perion, Ellinia, Sleepywood, Orbis, Ludibrium, El Nath) and deep hubs (Ant Tunnel Park, Path of Time, Sharp Cliff I), plus 45 beginner sword grinders |
-| 9 | Town presence (v0.3) | Ambient population for all 7 towns (`BotTownSystem`): one task per town spawns anchor-weighted stationed SocialBot cohorts + roaming TownWandererBots, headcounts fixed in `TownPresence.yaml`. Runs after wave 8 so the town nav graphs are already baked by the grinders spawned there; also re-runnable live via `!env townpresence` |
+| 9 | Town presence (v0.3) | Ambient population for all 7 towns (`BotTownSystem`): one task per town spawns anchor-weighted stationed SocialBot cohorts + roaming TownWandererBots. Headcounts live in `EnvironmentPopulation.yaml` under `waves.town_presence.towns` (formerly `TownPresence.yaml`). Runs after wave 8 so the town nav graphs are already baked by the grinders spawned there; also re-runnable live via `!env townpresence` / `!env population reload` |
 | — | After waves | `BotDecorationQueue.start()` (deferred full decoration) + `BotEquipChecker.start()` (2-min naked-bot sweep) |
 
 Notes:
