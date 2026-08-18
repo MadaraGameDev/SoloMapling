@@ -14,7 +14,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
-        <extension-api.version>0.1.0</extension-api.version>
+        <extension-api.version>0.2.0</extension-api.version>
         <gms-server.version>1.0-SNAPSHOT</gms-server.version>
         <yamlbeans.version>1.17</yamlbeans.version>
         <jgrapht.version>1.5.2</jgrapht.version>

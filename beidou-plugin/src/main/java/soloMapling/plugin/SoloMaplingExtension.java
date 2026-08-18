@@ -1,15 +1,19 @@
 package soloMapling.plugin;
 
+import dev.maple.extension.api.CharacterClassifier;
 import dev.maple.extension.api.HostCommandHandler;
 import dev.maple.extension.api.HostRuntime;
 import dev.maple.extension.api.ServerExtension;
+import dev.maple.extension.api.event.CharacterChatEvent;
+import dev.maple.extension.api.event.CharacterMapEnteredEvent;
 import dev.maple.extension.api.event.ServerReadyEvent;
+import dev.maple.extension.api.event.TradeInviteEvent;
 import org.gms.client.Character;
 import org.gms.client.Client;
 import org.gms.client.command.Command;
-import org.gms.extension.runtime.SoloMaplingBridge;
 import org.gms.net.server.Server;
 import org.gms.net.server.world.World;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import soloMapling.ArtificialPlayer.BotClientHandler;
@@ -35,6 +39,15 @@ import soloMapling.server.MethodScheduler;
 public final class SoloMaplingExtension implements ServerExtension {
 
     private static final Logger log = LoggerFactory.getLogger(SoloMaplingExtension.class);
+
+    /** Matches {@code BotHelpers} artificial / console id ranges. */
+    private static final CharacterClassifier ARTIFICIAL_CHARACTERS =
+            id -> id > 20_000 || id == 999;
+
+    private final Consumer<CharacterMapEnteredEvent> onMapEntered = this::onCharacterMapEntered;
+    private final Consumer<CharacterChatEvent> onChat = this::onCharacterChat;
+    private final Consumer<TradeInviteEvent> onTradeInvite = this::onTradeInvite;
+    private final Consumer<ServerReadyEvent> onReady = this::onHostServerReady;
 
     private HostRuntime runtime;
 
@@ -64,10 +77,12 @@ public final class SoloMaplingExtension implements ServerExtension {
         log.info("SoloMapling population plan source={} scale={} trainingScaledTotal={}",
                 plan.loadedFrom(), plan.scale(), plan.trainingCohortTotal());
 
+        runtime.addCharacterClassifier(ARTIFICIAL_CHARACTERS);
         registerCommands(runtime);
-        installHostBridge();
-
-        runtime.events().subscribe(ServerReadyEvent.class, this::onHostServerReady);
+        runtime.events().subscribe(CharacterMapEnteredEvent.class, onMapEntered);
+        runtime.events().subscribe(CharacterChatEvent.class, onChat);
+        runtime.events().subscribe(TradeInviteEvent.class, onTradeInvite);
+        runtime.events().subscribe(ServerReadyEvent.class, onReady);
 
         try {
             EquipMetadataCache.initialize();
@@ -78,13 +93,30 @@ public final class SoloMaplingExtension implements ServerExtension {
         }
     }
 
-    private static void installHostBridge() {
-        SoloMaplingBridge.install(
-                (chr, mapId) -> EventBus.getInstance().publish(
-                        new GameEvent(chr, EventType.MAP_ENTERED, "Entered map " + mapId, null, null)),
-                (chr, message) -> EventBus.getInstance().publish(
-                        new GameEvent(chr, EventType.CHAT_GENERAL, message, null, null)),
-                (bot, partner) -> BotTradeQueue.getInstance().addTradeRequest(bot, partner));
+    private void onCharacterMapEntered(CharacterMapEnteredEvent event) {
+        Character chr = findOnlineCharacter(event.characterId());
+        if (chr == null) {
+            return;
+        }
+        EventBus.getInstance().publish(new GameEvent(chr, EventType.MAP_ENTERED,
+                "Entered map " + event.mapId(), null, null));
+    }
+
+    private void onCharacterChat(CharacterChatEvent event) {
+        Character chr = findOnlineCharacter(event.characterId());
+        if (chr == null) {
+            return;
+        }
+        EventBus.getInstance().publish(new GameEvent(chr, EventType.CHAT_GENERAL, event.message(), null, null));
+    }
+
+    private void onTradeInvite(TradeInviteEvent event) {
+        Character bot = findOnlineCharacter(event.inviteeCharacterId());
+        Character partner = findOnlineCharacter(event.inviterCharacterId());
+        if (bot == null || partner == null) {
+            return;
+        }
+        BotTradeQueue.getInstance().addTradeRequest(bot, partner);
     }
 
     private void registerCommands(HostRuntime runtime) {
@@ -160,7 +192,13 @@ public final class SoloMaplingExtension implements ServerExtension {
     @Override
     public void onUnload() {
         log.info("SoloMapling plugin onUnload");
-        SoloMaplingBridge.clear();
+        if (runtime != null) {
+            runtime.removeCharacterClassifier(ARTIFICIAL_CHARACTERS);
+            runtime.events().unsubscribe(CharacterMapEnteredEvent.class, onMapEntered);
+            runtime.events().unsubscribe(CharacterChatEvent.class, onChat);
+            runtime.events().unsubscribe(TradeInviteEvent.class, onTradeInvite);
+            runtime.events().unsubscribe(ServerReadyEvent.class, onReady);
+        }
         runtime = null;
     }
 }
