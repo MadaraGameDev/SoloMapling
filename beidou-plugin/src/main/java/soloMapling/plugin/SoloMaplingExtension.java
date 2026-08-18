@@ -1,11 +1,12 @@
 package soloMapling.plugin;
 
+import dev.maple.extension.api.HostCommandHandler;
+import dev.maple.extension.api.HostRuntime;
+import dev.maple.extension.api.ServerExtension;
+import dev.maple.extension.api.event.ServerReadyEvent;
 import org.gms.client.Character;
 import org.gms.client.Client;
 import org.gms.client.command.Command;
-import org.gms.extension.api.HostRuntime;
-import org.gms.extension.api.ServerExtension;
-import org.gms.extension.api.event.ServerReadyEvent;
 import org.gms.extension.runtime.SoloMaplingBridge;
 import org.gms.net.server.Server;
 import org.gms.net.server.world.World;
@@ -29,7 +30,7 @@ import soloMapling.server.MethodScheduler;
 
 /**
  * SPI entry for SoloMapling. Discovered via
- * {@code META-INF/services/org.gms.extension.api.ServerExtension}.
+ * {@code META-INF/services/dev.maple.extension.api.ServerExtension}.
  */
 public final class SoloMaplingExtension implements ServerExtension {
 
@@ -114,7 +115,7 @@ public final class SoloMaplingExtension implements ServerExtension {
     }
 
     private void bindCommand(HostRuntime runtime, String syntax, int level, String description,
-                             org.gms.extension.api.HostCommandHandler handler) {
+                             HostCommandHandler handler) {
         runtime.commands().register(syntax, level, description, handler);
     }
 

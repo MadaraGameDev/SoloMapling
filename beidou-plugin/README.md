@@ -10,7 +10,8 @@ The **production SoloMapling plugin for BeiDou** is built from this directory:
 |------|------|
 | `beidou-plugin/` (this module) | Full `soloMapling/**` framework ported to `org.gms.*` + `SoloMaplingExtension` SPI |
 | BeiDou `gms-server/plugins/` | Drop the built `solomapling-plugin-*.jar` here at deploy time |
-| BeiDou `extension-api` + `org.gms.extension.runtime` | Host SPI / `ExtensionLoader` |
+| BeiDou `org.gms.extension.runtime` | Host `ExtensionLoader` / `BeiDouHostRuntime` |
+| [maple-extension-api](https://github.com/zmzeng/maple-extension-api) | Host-neutral SPI (`dev.maple.extension:extension-api`) |
 | `src/main/java/soloMapling/` (repo root) | Cosmic in-tree copy (`client.*` / `net.*` imports) — separate from this plugin tree |
 
 When updating framework behavior, apply changes to the Cosmic tree first, then port the same logic into `beidou-plugin/src/main/java/soloMapling/` (BeiDou imports).
@@ -25,9 +26,12 @@ When updating framework behavior, apply changes to the Cosmic tree first, then p
 ## Build & run
 
 ```bash
-# 1. Install BeiDou host artifacts (extension-api + thin gms-server jar)
+# 0. Neutral SPI
+cd /path/to/maple-extension-api && mvn install
+
+# 1. Install BeiDou host artifacts (thin gms-server jar)
 cd /path/to/BeiDou-Server
-mvn -pl extension-api,gms-server -am install -DskipTests
+mvn -pl gms-server -am install -DskipTests
 mvn -pl gms-server package -DskipTests
 
 # 2. Build plugin (this module)

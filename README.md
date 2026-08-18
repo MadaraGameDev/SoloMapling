@@ -170,11 +170,11 @@ Historically this meant: framework under `soloMapling/`, plus **~33 Cosmic files
 
 ### BeiDou (plugin + host runtime)
 
-BeiDou (Cosmic-derived, Spring Boot + Netty) exposes a small **extension SPI**:
+BeiDou (Cosmic-derived, Spring Boot + Netty) implements a host-neutral **extension SPI** from [maple-extension-api](https://github.com/zmzeng/maple-extension-api):
 
 | Piece | Role |
 |-------|------|
-| `extension-api` | Shared contracts: `ServerExtension`, `HostRuntime`, config / event bus / command registry |
+| `dev.maple.extension:extension-api` | Shared contracts: `ServerExtension`, `HostRuntime`, config / event bus / command registry |
 | BeiDou `org.gms.extension.runtime` | Host implementation + `ExtensionLoader` (`ServiceLoader` over `plugins/*.jar`) |
 | `beidou-plugin/` | Full SoloMapling framework packaged as a jar; entry `SoloMaplingExtension` |
 
@@ -192,9 +192,12 @@ solomapling:
 **Build & install plugin (from this repo):**
 
 ```bash
-# Install BeiDou host jars first (extension-api + thin gms-server)
+# Neutral SPI (independent repo; not this project)
+cd /path/to/maple-extension-api && mvn install
+
+# BeiDou host jars (thin gms-server)
 cd /path/to/BeiDou-Server
-mvn -pl extension-api,gms-server -am install -DskipTests
+mvn -pl gms-server -am install -DskipTests
 mvn -pl gms-server package -DskipTests
 
 cd /path/to/SoloMapling/beidou-plugin
