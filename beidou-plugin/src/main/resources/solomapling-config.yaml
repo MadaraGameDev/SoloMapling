@@ -1,0 +1,9 @@
+# Deprecated placeholder
+
+This file previously contained a Cosmic-style world config dump and was unused by SoloMapling.
+
+Population / TrainingBot configuration lives in:
+
+`soloMapling/Environment/EnvironmentPopulation.yaml`
+
+See `soloMapling/Environment/CONFIG.md`.

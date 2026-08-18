@@ -1,18 +1,35 @@
 package soloMapling.plugin;
 
+import org.gms.client.Character;
+import org.gms.client.Client;
+import org.gms.client.command.Command;
 import org.gms.extension.api.HostRuntime;
 import org.gms.extension.api.ServerExtension;
 import org.gms.extension.api.event.ServerReadyEvent;
+import org.gms.extension.runtime.SoloMaplingBridge;
+import org.gms.net.server.Server;
+import org.gms.net.server.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import soloMapling.ArtificialPlayer.BotClientHandler;
+import soloMapling.ArtificialPlayer.BotTradeSystem.BotTradeQueue;
+import soloMapling.Environment.EnvironmentManager;
+import soloMapling.Environment.EnvironmentPopulationConfig;
+import soloMapling.command.ArtificialPlayerCommand;
+import soloMapling.command.BotMoveCommand;
+import soloMapling.command.EnvironmentCommand;
+import soloMapling.command.FMBotCommand;
+import soloMapling.command.GCMoveCommand;
+import soloMapling.itemPool.DesirableEquipList;
+import soloMapling.itemPool.EquipMetadataCache;
+import soloMapling.server.EventMessageSystem.EventBus;
+import soloMapling.server.EventMessageSystem.EventType;
+import soloMapling.server.EventMessageSystem.GameEvent;
+import soloMapling.server.MethodScheduler;
 
 /**
- * Historical SPI smoke stub only.
- *
- * <p>The <b>production</b> SoloMapling plugin for BeiDou lives in the BeiDou repo:
- * {@code BeiDou-Server/solomapling-plugin/} (full {@code soloMapling/**} + SPI).
- * Build that module and drop the jar into {@code gms-server/plugins/}.
- * See {@code beidou-plugin/README.md}.
+ * SPI entry for SoloMapling. Discovered via
+ * {@code META-INF/services/org.gms.extension.api.ServerExtension}.
  */
 public final class SoloMaplingExtension implements ServerExtension {
 
@@ -27,37 +44,122 @@ public final class SoloMaplingExtension implements ServerExtension {
 
     @Override
     public String version() {
-        return "0.3.0-SPI-stub";
+        return "0.3.0";
     }
 
     @Override
     public void onLoad(HostRuntime runtime) {
         this.runtime = runtime;
-        log.info("SoloMapling SPI stub onLoad hostId={} — use BeiDou solomapling-plugin for bots",
-                runtime.hostId());
+        log.info("SoloMapling plugin onLoad hostId={} spawnBotsOnStartup={}",
+                runtime.hostId(),
+                runtime.config().getBool("solomapling.spawn-bots-on-startup", false));
 
-        runtime.commands().register(
-                "smping",
-                4,
-                "SoloMapling plugin ping (SPI stub)",
-                (characterId, args) -> log.info("SoloMapling !smping from characterId={} args={}",
-                        characterId, String.join(" ", args == null ? new String[0] : args)));
+        String populationPath = runtime.config().getString("solomapling.population-config", "");
+        if (populationPath != null && !populationPath.isBlank()) {
+            EnvironmentPopulationConfig.setConfigPath(populationPath);
+            log.info("SoloMapling population-config override={}", populationPath);
+        }
+        var plan = EnvironmentPopulationConfig.plan();
+        log.info("SoloMapling population plan source={} scale={} trainingScaledTotal={}",
+                plan.loadedFrom(), plan.scale(), plan.trainingCohortTotal());
+
+        registerCommands(runtime);
+        installHostBridge();
 
         runtime.events().subscribe(ServerReadyEvent.class, this::onHostServerReady);
+
+        try {
+            EquipMetadataCache.initialize();
+            DesirableEquipList.load();
+            log.info("SoloMapling EquipMetadataCache + DesirableEquipList loaded");
+        } catch (Throwable t) {
+            log.warn("SoloMapling equip metadata prefetch failed (bots may still start lazily): {}", t.toString());
+        }
+    }
+
+    private static void installHostBridge() {
+        SoloMaplingBridge.install(
+                (chr, mapId) -> EventBus.getInstance().publish(
+                        new GameEvent(chr, EventType.MAP_ENTERED, "Entered map " + mapId, null, null)),
+                (chr, message) -> EventBus.getInstance().publish(
+                        new GameEvent(chr, EventType.CHAT_GENERAL, message, null, null)),
+                (bot, partner) -> BotTradeQueue.getInstance().addTradeRequest(bot, partner));
+    }
+
+    private void registerCommands(HostRuntime runtime) {
+        bindCommand(runtime, "smping", 4, "SoloMapling plugin ping",
+                (characterId, args) -> log.info("SoloMapling !smping from characterId={} args={}",
+                        characterId, String.join(" ", args == null ? new String[0] : args)));
+        bindCommand(runtime, "env", 4, "SoloMapling environment commands", new EnvironmentCommand());
+        bindCommand(runtime, "bot", 4, "SoloMapling artificial player commands", new ArtificialPlayerCommand());
+        bindCommand(runtime, "move", 4, "SoloMapling bot move commands", new BotMoveCommand());
+        bindCommand(runtime, "fmbot", 4, "SoloMapling FM bot commands", new FMBotCommand());
+        bindCommand(runtime, "gcmove", 4, "SoloMapling GCMove commands", new GCMoveCommand());
+    }
+
+    private void bindCommand(HostRuntime runtime, String syntax, int level, String description, Command command) {
+        runtime.commands().register(syntax, level, description, (characterId, args) -> {
+            Character chr = findOnlineCharacter(characterId);
+            if (chr == null) {
+                log.warn("SoloMapling command !{}: characterId={} not online", syntax, characterId);
+                return;
+            }
+            Client client = chr.getClient();
+            if (client == null) {
+                log.warn("SoloMapling command !{}: characterId={} has no client", syntax, characterId);
+                return;
+            }
+            command.execute(client, args == null ? new String[0] : args);
+        });
+    }
+
+    private void bindCommand(HostRuntime runtime, String syntax, int level, String description,
+                             org.gms.extension.api.HostCommandHandler handler) {
+        runtime.commands().register(syntax, level, description, handler);
+    }
+
+    private static Character findOnlineCharacter(int characterId) {
+        for (World world : Server.getInstance().getWorlds()) {
+            Character chr = world.getPlayerStorage().getCharacterById(characterId);
+            if (chr != null) {
+                return chr;
+            }
+        }
+        return null;
     }
 
     private void onHostServerReady(ServerReadyEvent event) {
-        log.info("SoloMapling stub received ServerReadyEvent at {}", event.readyAtEpochMs());
+        log.info("SoloMapling received ServerReadyEvent at {}", event.readyAtEpochMs());
     }
 
     @Override
     public void onServerReady() {
-        log.info("SoloMapling stub onServerReady — bot world lives in BeiDou solomapling-plugin");
+        boolean spawn = runtime != null
+                && runtime.config().getBool("solomapling.spawn-bots-on-startup", false);
+        log.info("SoloMapling onServerReady spawnBotsOnStartup={}", spawn);
+        try {
+            BotClientHandler.initHeadlessBotClient();
+            log.info("SoloMapling BotClientHandler headless client initialized");
+        } catch (Throwable t) {
+            log.error("SoloMapling failed to init headless BotClient", t);
+            return;
+        }
+        if (spawn) {
+            MethodScheduler.runAfterDelay(() -> {
+                try {
+                    EnvironmentManager.environmentLoadStartup();
+                } catch (Throwable t) {
+                    log.error("SoloMapling environmentLoadStartup failed", t);
+                }
+            }, 1000);
+            log.info("SoloMapling scheduled environmentLoadStartup in 1s");
+        }
     }
 
     @Override
     public void onUnload() {
-        log.info("SoloMapling stub onUnload");
+        log.info("SoloMapling plugin onUnload");
+        SoloMaplingBridge.clear();
         runtime = null;
     }
 }

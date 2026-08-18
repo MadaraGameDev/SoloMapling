@@ -140,7 +140,7 @@ SoloMapling is a **simulation framework**, not a standalone server. It always ne
 | Host | Integration style | Where SoloMapling lives |
 |------|-------------------|-------------------------|
 | **[Cosmic](https://github.com/P0nk/Cosmic)** (this repo's historical tree) | In-tree: `soloMapling/` compiled into the Cosmic jar; small surgical hooks in Cosmic packages | `src/main/java/soloMapling/` |
-| **[BeiDou-Server](https://github.com/BeiDouMS/BeiDou-Server)** | Out-of-process plugin jar via SPI (`ServerExtension`) | Built as `solomapling-plugin` inside BeiDou; loaded from `gms-server/plugins/` |
+| **[BeiDou-Server](https://github.com/BeiDouMS/BeiDou-Server)** | Out-of-process plugin jar via SPI (`ServerExtension`) | Built from this repo's `beidou-plugin/`; loaded from BeiDou `gms-server/plugins/` |
 
 Both hosts still need a few base hooks (bot client, map/trade/merchant awareness, command bridge, etc.). The plugin model does **not** remove those hooks — it isolates the **framework bulk** so SoloMapling can be upgraded/disabled without rebuilding the whole game jar every time.
 
@@ -176,7 +176,7 @@ BeiDou (Cosmic-derived, Spring Boot + Netty) exposes a small **extension SPI**:
 |-------|------|
 | `extension-api` | Shared contracts: `ServerExtension`, `HostRuntime`, config / event bus / command registry |
 | BeiDou `org.gms.extension.runtime` | Host implementation + `ExtensionLoader` (`ServiceLoader` over `plugins/*.jar`) |
-| `solomapling-plugin` | Full SoloMapling framework packaged as a jar; entry `SoloMaplingExtension` |
+| `beidou-plugin/` | Full SoloMapling framework packaged as a jar; entry `SoloMaplingExtension` |
 
 **Load order on BeiDou:** Spring Boot starts → `ServerManager` builds `BeiDouHostRuntime` and loads plugins → `Server.init()` → `notifyServerReady()` → plugin `onServerReady()` → optional `EnvironmentManager.environmentLoadStartup()`.
 
@@ -189,14 +189,19 @@ solomapling:
   spawn-bots-on-startup: true   # run EnvironmentManager waves after ServerReady
 ```
 
-**Build & install plugin (from BeiDou repo):**
+**Build & install plugin (from this repo):**
 
 ```bash
+# Install BeiDou host jars first (extension-api + thin gms-server)
 cd /path/to/BeiDou-Server
-mvn -pl extension-api,gms-server,solomapling-plugin -am package -DskipTests
-cp solomapling-plugin/target/solomapling-plugin-*-SNAPSHOT.jar gms-server/plugins/
+mvn -pl extension-api,gms-server -am install -DskipTests
+mvn -pl gms-server package -DskipTests
 
-cd gms-server   # working directory MUST be gms-server (wz/scripts + FS resources)
+cd /path/to/SoloMapling/beidou-plugin
+mvn package -DskipTests
+cp target/solomapling-plugin-*-SNAPSHOT.jar /path/to/BeiDou-Server/gms-server/plugins/
+
+cd /path/to/BeiDou-Server/gms-server   # working directory MUST be gms-server
 java -Xmx4g -Dspring.config.location=src/main/resources/application.yml \
   -jar target/BeiDou-boot.jar
 ```
@@ -206,8 +211,8 @@ Notes specific to the BeiDou plugin path:
 - Runnable fat jar is **`BeiDou-boot.jar`**; thin `BeiDou.jar` is for compile-time dependency of the plugin module.
 - Bot clone template character is named **`fmbot`** (Flyway migration on BeiDou), not a hard-coded character id.
 - Registered GM commands via HostCommandRegistry (GM ≥ 4): `!smping`, `!env`, `!bot`, `!move`, `!fmbot`, `!gcmove`.
-- **Population is YAML-configured** on BeiDou: `EnvironmentPopulation.yaml` controls wave counts, `scale`, TrainingBot spawn hubs, and town ambient bots under `waves.town_presence.towns` (formerly a separate `TownPresence.yaml`). See BeiDou `solomapling-plugin/.../Environment/CONFIG.md`.
-- This repo's `beidou-plugin/` directory is a **thin SPI stub / pointer** only — the production plugin sources live under BeiDou's `solomapling-plugin/`. Upstream framework edits still happen in SoloMapling `src/main/java/soloMapling/`, then sync into BeiDou when shipping a host plugin build. See [beidou-plugin/README.md](beidou-plugin/README.md).
+- **Population is YAML-configured** on BeiDou: `EnvironmentPopulation.yaml` controls wave counts, `scale`, TrainingBot spawn hubs, and town ambient bots under `waves.town_presence.towns` (formerly a separate `TownPresence.yaml`). See `beidou-plugin/src/main/java/soloMapling/Environment/CONFIG.md`.
+- The **`beidou-plugin/`** directory is the production BeiDou plugin build. Cosmic framework sources remain under `src/main/java/soloMapling/`; port changes into `beidou-plugin/` when shipping a BeiDou plugin. See [beidou-plugin/README.md](beidou-plugin/README.md).
 
 ## Requirements & Setup
 
