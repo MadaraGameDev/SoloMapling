@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
-import server.Trade;
-import server.maps.MapObject;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.Trade;
+import org.gms.server.maps.MapObject;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotAttackSystem.ThrowingStarSelector;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;
@@ -153,7 +153,7 @@ public abstract class BotSM implements EventSubscriber {
         return this.state == expectedState;
     }
 
-    public client.Character getChr() {
+    public org.gms.client.Character getChr() {
         return this.character;
     }
 

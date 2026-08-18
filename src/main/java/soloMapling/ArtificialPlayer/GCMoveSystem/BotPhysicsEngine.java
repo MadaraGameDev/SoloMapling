@@ -1,10 +1,10 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import constants.game.CharacterStance;
-import server.maps.Foothold;
-import server.maps.MapleMap;
-import server.maps.Rope;
+import org.gms.client.Character;
+import org.gms.constants.game.CharacterStance;
+import org.gms.server.maps.Foothold;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Rope;
 
 import java.awt.*;
 import java.util.HashMap;
@@ -2388,7 +2388,7 @@ final class BotPhysicsEngine {
         }
     }
 
-    private static final java.util.Map<server.maps.FootholdTree, FootholdCollisionIndex> COLLISION_INDEX =
+    private static final java.util.Map<org.gms.server.maps.FootholdTree, FootholdCollisionIndex> COLLISION_INDEX =
             java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
 
     // Sentinel for trees that can't be indexed (Mockito tree/map stubs in tests return null
@@ -2398,7 +2398,7 @@ final class BotPhysicsEngine {
             java.util.List.of(), java.util.List.of(), 0, new Foothold[0][]);
 
     private static FootholdCollisionIndex collisionIndex(MapleMap map) {
-        server.maps.FootholdTree tree = map != null ? map.getFootholds() : null;
+        org.gms.server.maps.FootholdTree tree = map != null ? map.getFootholds() : null;
         if (tree == null) {
             return UNINDEXABLE;
         }

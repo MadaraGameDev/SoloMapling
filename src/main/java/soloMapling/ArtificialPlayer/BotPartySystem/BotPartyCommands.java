@@ -1,16 +1,16 @@
 package soloMapling.ArtificialPlayer.BotPartySystem;
 
-import client.Character;
-import net.server.coordinator.world.InviteCoordinator;
-import net.server.coordinator.world.InviteCoordinator.InviteResult;
-import net.server.coordinator.world.InviteCoordinator.InviteResultType;
-import net.server.coordinator.world.InviteCoordinator.InviteType;
-import net.server.world.Party;
-import net.server.world.PartyCharacter;
-import net.server.world.PartyOperation;
-import net.server.world.World;
-import server.maps.MapleMap;
-import tools.PacketCreator;
+import org.gms.client.Character;
+import org.gms.net.server.coordinator.world.InviteCoordinator;
+import org.gms.net.server.coordinator.world.InviteCoordinator.InviteResult;
+import org.gms.net.server.coordinator.world.InviteCoordinator.InviteResultType;
+import org.gms.net.server.coordinator.world.InviteCoordinator.InviteType;
+import org.gms.net.server.world.Party;
+import org.gms.net.server.world.PartyCharacter;
+import org.gms.net.server.world.PartyOperation;
+import org.gms.net.server.world.World;
+import org.gms.server.maps.MapleMap;
+import org.gms.util.PacketCreator;
 
 import static soloMapling.DebugUtilities.debugprint;
 

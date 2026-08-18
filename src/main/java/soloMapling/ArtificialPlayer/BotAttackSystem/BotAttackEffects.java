@@ -1,25 +1,24 @@
 package soloMapling.ArtificialPlayer.BotAttackSystem;
 
-import client.Character;
-import client.inventory.Equip;
-import client.inventory.InventoryType;
-import client.inventory.Item;
-import constants.inventory.ItemConstants;
-import net.packet.Packet;
-import net.server.channel.handlers.AbstractDealDamageHandler.AttackTarget;
-import net.server.world.World;
-import server.ItemInformationProvider;
-import server.life.Monster;
-import server.life.MonsterDropEntry;
-import server.life.MonsterInformationProvider;
-import server.maps.MapItem;
-import server.maps.MapObject;
-import server.maps.MapObjectType;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.InventoryType;
+import org.gms.client.inventory.Item;
+import org.gms.constants.inventory.ItemConstants;
+import org.gms.net.packet.Packet;
+import org.gms.net.server.world.World;
+import org.gms.server.ItemInformationProvider;
+import org.gms.server.life.Monster;
+import org.gms.server.life.MonsterDropEntry;
+import org.gms.server.life.MonsterInformationProvider;
+import org.gms.server.maps.MapItem;
+import org.gms.server.maps.MapObject;
+import org.gms.server.maps.MapObjectType;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 import soloMapling.server.MethodScheduler;
-import tools.PacketCreator;
-import tools.Randomizer;
+import org.gms.util.PacketCreator;
+import org.gms.util.Randomizer;
 
 import java.awt.Point;
 import java.util.HashMap;
@@ -105,10 +104,10 @@ public final class BotAttackEffects {
     }
 
     /* Packet target map: each mob's object id -> its damage line(s). */
-    private static Map<Integer, AttackTarget> toTargets(Map<Monster, List<Integer>> hits, short hitDelay) {
-        Map<Integer, AttackTarget> targets = new HashMap<>();
+    private static Map<Integer, List<Integer>> toTargets(Map<Monster, List<Integer>> hits, short hitDelay) {
+        Map<Integer, List<Integer>> targets = new HashMap<>();
         for (Map.Entry<Monster, List<Integer>> hit : hits.entrySet()) {
-            targets.put(hit.getKey().getObjectId(), new AttackTarget(hitDelay, hit.getValue()));
+            targets.put(hit.getKey().getObjectId(), hit.getValue());
         }
         return targets;
     }
@@ -171,8 +170,8 @@ public final class BotAttackEffects {
         final byte dropType = (byte) (bot.getParty() != null ? 1 : 0);
         // World rates (config drop_rate/boss_drop_rate/meso_rate), matching a real player.
         final World world = bot.getWorldServer();
-        final int dropRate = Math.max(1, mob.isBoss() ? world.getBossDropRate() : world.getDropRate());
-        final int mesoRate = Math.max(1, world.getMesoRate());
+        final int dropRate = (int) Math.max(1, mob.isBoss() ? world.getBossDropRate() : world.getDropRate());
+        final int mesoRate = (int) Math.max(1, world.getMesoRate());
         final ItemInformationProvider ii = ItemInformationProvider.getInstance();
         final int mobX = mob.getPosition().x;
         final int mobY = mob.getPosition().y;

@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotChatterSystem.BotChatter;
 import soloMapling.ArtificialPlayer.BotFlavorSystem.BotFlavor;
 import soloMapling.ArtificialPlayer.BotFlavorSystem.LevelUpCongrats;

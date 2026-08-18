@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
-import net.server.Server;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.net.server.Server;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands;

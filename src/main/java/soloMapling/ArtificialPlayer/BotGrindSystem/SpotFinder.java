@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import client.Character;
-import server.life.Monster;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.life.Monster;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotSpotClaims;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 

@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import server.maps.Foothold;
-import server.maps.Rope;
+import org.gms.client.Character;
+import org.gms.server.maps.Foothold;
+import org.gms.server.maps.Rope;
 
 import java.awt.Point;
 import java.util.HashMap;
@@ -26,7 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * volatile only because a command thread may flip them between ticks.
  */
 class BotMovementState {
-    final Character bot;                  // the bot avatar (a real client.Character)
+    final Character bot;                  // the bot avatar (a real org.gms.client.Character)
     volatile Character owner;             // follow anchor (the followed character), nullable
     volatile boolean following = false;
     volatile int followTargetId = 0;      // 0 = owner

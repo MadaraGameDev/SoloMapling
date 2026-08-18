@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import server.maps.Rope;
+import org.gms.client.Character;
+import org.gms.server.maps.Rope;
 import soloMapling.ArtificialPlayer.BotGrindSystem.GrindBrain;
 import soloMapling.ArtificialPlayer.BotGrindSystem.RestSpotFinder;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;

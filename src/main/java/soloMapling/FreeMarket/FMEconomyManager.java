@@ -1,8 +1,8 @@
 package soloMapling.FreeMarket;
 
-import client.Character;
-import client.Job;
-import server.maps.HiredMerchant;
+import org.gms.client.Character;
+import org.gms.client.Job;
+import org.gms.server.maps.HiredMerchant;
 
 import java.awt.*;
 import java.util.Map;

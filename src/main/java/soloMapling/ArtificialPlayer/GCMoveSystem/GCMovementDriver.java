@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
 
 import java.awt.Point;
 import java.awt.Rectangle;

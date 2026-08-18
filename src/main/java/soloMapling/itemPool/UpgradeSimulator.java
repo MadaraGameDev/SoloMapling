@@ -1,8 +1,8 @@
 package soloMapling.itemPool;
 
-import client.inventory.Equip;
-import constants.inventory.EquipType;
-import server.ItemInformationProvider;
+import org.gms.client.inventory.Equip;
+import org.gms.constants.inventory.EquipType;
+import org.gms.server.ItemInformationProvider;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;

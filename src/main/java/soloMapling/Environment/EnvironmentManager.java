@@ -1,8 +1,8 @@
 package soloMapling.Environment;
 
-import client.Character;
-import client.Job;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.client.Job;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotGeneration;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorate;
@@ -22,8 +22,8 @@ import soloMapling.ArtificialPlayer.SocialHotPotatoManager;
 import soloMapling.Casino.CasinoChipConfig;
 import soloMapling.server.ExecutorServiceManager;
 import soloMapling.server.NpcSpawner;
-import constants.id.MapId;
-import constants.id.NpcId;
+import org.gms.constants.id.MapId;
+import org.gms.constants.id.NpcId;
 
 import java.awt.*;
 import java.io.File;
@@ -92,6 +92,35 @@ public class EnvironmentManager {
     private static final int MAPLE_ISLAND_TUTORIAL = 10000;
     private static final int OPQ_LOBBY = 200080101;
 
+    /** Warm channel-1 MapManager for hubs bots stampede first (avoids cold-load + DB under lock). */
+    private static void preloadStartupMaps() {
+        int[] hubs = {
+                FM_ENTRANCE, HENESYS, HENESYS_MARKET, HENESYS_PARK,
+                HENESYS_POTION_SHOP, HENESYS_GAME_ZONE, HENESYS_PET_PARK,
+                MAPLE_ISLAND_TUTORIAL, OPQ_LOBBY,
+                // FM rooms commonly used by populateFreeMarketRegion
+                910000001, 910000002, 910000003, 910000004, 910000005,
+                910000006, 910000007, 910000008, 910000009, 910000010,
+                910000011, 910000012, 910000013, 910000014, 910000015,
+                910000016, 910000017, 910000018, 910000019, 910000020,
+                910000021, 910000022
+        };
+        long t0 = System.currentTimeMillis();
+        int ok = 0;
+        for (int mapId : hubs) {
+            try {
+                if (getMapleMapById(mapId) != null) {
+                    ok++;
+                }
+            } catch (Throwable t) {
+                debugprint(fmt("preload map {} failed: {}", mapId, t.toString()));
+            }
+        }
+        System.out.println(String.format(
+                "[EnvironmentManager] Preloaded %d/%d hub maps in %.1fs",
+                ok, hubs.length, (System.currentTimeMillis() - t0) / 1000.0));
+    }
+
     public static void environmentLoadStartup() {
         // EquipMetadataCache + DesirableEquipList are server data, loaded during
         // Server.init() alongside the other WZ-derived data - guaranteed ready
@@ -102,6 +131,10 @@ public class EnvironmentManager {
         // directions - a player entering a populated map, or a bot returning to the player's map.
         BotMapEntryResponder.register();
 
+        // Warm MapManager for hub maps before parallel waves stampede getMap+DB.
+        preloadStartupMaps();
+
+        // Counts / toggles from EnvironmentPopulation.yaml (see EnvironmentPopulationConfig).
         EnvironmentPopulationConfig.PopulationPlan pop = EnvironmentPopulationConfig.plan();
         System.out.println(String.format(
                 "[EnvironmentManager] Population plan source=%s scale=%.2f trainingCohorts=%d (scaled total=%d)",
@@ -240,6 +273,9 @@ public class EnvironmentManager {
             runWave(7, "Late arrivals", tasks);
         }
 
+        // Training grinders: cohorts from YAML. Each cohort spawns at a hub map; bots discover nearby
+        // level-appropriate field maps via TrainingMapFinder and fan out. Deep hubs (Ant Tunnel Park,
+        // Path of Time, Sharp Cliff) populate far dungeons the town hop-radius cannot reach.
         var w8 = pop.training();
         if (w8.enabled()) {
             List<Runnable> tasks = new ArrayList<>();
@@ -260,6 +296,7 @@ public class EnvironmentManager {
             runWave(8, "Training bots", tasks);
         }
 
+        // Ambient town population from EnvironmentPopulation.yaml waves.town_presence.towns.
         var w9 = pop.townPresence();
         if (w9.enabled()) {
             List<Runnable> townTasks = new ArrayList<>();
@@ -319,10 +356,8 @@ public class EnvironmentManager {
         return ids;
     }
 
-    // Ambient town population: for each town in TownPresence.yaml, scatter its per-map stationed SocialBot
-    // headcounts plus its town-level roaming TownWandererBot count at anchor-weighted spots, so the seven
-    // towns beyond Henesys read as lived-in instead of only having grinders pass through. Fixed counts
-    // (YAML-tunable). Called from wave 9; also driven live by !env townpresence.
+    // Ambient town population: for each town in EnvironmentPopulation.yaml (town_presence.towns), scatter
+    // its per-map stationed SocialBot headcounts plus its town-level roaming TownWandererBot count.
     public static void spawnTownPresence() {
         for (TownPresenceConfig.TownEntry town : TownPresenceConfig.towns()) {
             spawnTown(town);

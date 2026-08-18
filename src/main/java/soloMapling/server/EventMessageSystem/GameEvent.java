@@ -1,13 +1,14 @@
 package soloMapling.server.EventMessageSystem;
 
-import client.Character;
-import client.inventory.Item;
-import server.maps.MapleMap;
-
-import static soloMapling.DebugUtilities.debugprint;
+import org.gms.client.Character;
+import org.gms.client.inventory.Item;
+import org.gms.server.maps.MapleMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GameEvent {
     private static int nextId = 1;
+    private static final Logger log = LoggerFactory.getLogger(GameEvent.class);
 
     private final int id;
     private final long timestamp;
@@ -22,8 +23,7 @@ public class GameEvent {
     private final Item item;
     private final Boolean pass;
 
-    public GameEvent(Character mapleCharacter,
-                     EventType type, String message, Item item, Boolean pass) {
+    public GameEvent(Character mapleCharacter, EventType type, String message, Item item, Boolean pass) {
         this.id = nextId++;
         this.timestamp = System.currentTimeMillis();
         this.mapleCharacter = mapleCharacter;
@@ -32,26 +32,62 @@ public class GameEvent {
         this.map = mapleCharacter.getMap();
         this.playerName = mapleCharacter.getName();
         this.playerId = mapleCharacter.getId();
-
         this.type = type;
         this.message = message;
         this.item = item;
         this.pass = pass;
     }
 
-    public int getId() { return id; }
-    public long getTimestamp() { return timestamp; }
-    public Character getMapleCharacter() { return mapleCharacter; }
-    public int getWorld() { return world; }
-    public int getChannel() { return channel; }
-    public MapleMap getMap() { return map; }
-    public String getPlayerName() { return playerName; }
-    public int getPlayerId() { return playerId; }
-    public EventType getType() { return type; }
-    public String getMessage() { return message; }
-    public Item getItem() { return item; }
-    public Boolean getPass() { return pass; }
+    public int getId() {
+        return id;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public Character getMapleCharacter() {
+        return mapleCharacter;
+    }
+
+    public int getWorld() {
+        return world;
+    }
+
+    public int getChannel() {
+        return channel;
+    }
+
+    public MapleMap getMap() {
+        return map;
+    }
+
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    public int getPlayerId() {
+        return playerId;
+    }
+
+    public EventType getType() {
+        return type;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public Item getItem() {
+        return item;
+    }
+
+    public Boolean getPass() {
+        return pass;
+    }
+
     public void printDescription() {
-        debugprint("GameEvent: ", id, mapleCharacter, type, message, item, pass);
+        log.debug("GameEvent: id={}, character={}, type={}, message={}, item={}, pass={}",
+                id, mapleCharacter, type, message, item, pass);
     }
 }

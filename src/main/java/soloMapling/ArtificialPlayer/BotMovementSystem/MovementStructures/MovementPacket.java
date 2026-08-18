@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures;
 
-import net.packet.InPacket;
+import org.gms.net.packet.InPacket;
 
 import java.util.ArrayList;
 import java.util.Arrays;

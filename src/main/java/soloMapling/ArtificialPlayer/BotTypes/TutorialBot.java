@@ -1,13 +1,13 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import client.Job;
-import client.inventory.BodyPart;
-import client.inventory.Equip;
-import client.inventory.Item;
-import server.ItemInformationProvider;
-import server.maps.MapItem;
-import server.maps.MapObject;
+import org.gms.client.Character;
+import org.gms.client.Job;
+import org.gms.client.inventory.BodyPart;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.Item;
+import org.gms.server.ItemInformationProvider;
+import org.gms.server.maps.MapItem;
+import org.gms.server.maps.MapObject;
 import soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotHelpers;

@@ -1,9 +1,9 @@
 package soloMapling.FreeMarket;
 
-import client.Character;
-import server.maps.PlayerShop;
-import server.maps.PlayerShopItem;
-import tools.PacketCreator;
+import org.gms.client.Character;
+import org.gms.server.maps.PlayerShop;
+import org.gms.server.maps.PlayerShopItem;
+import org.gms.util.PacketCreator;
 
 import java.awt.*;
 

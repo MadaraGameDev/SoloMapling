@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotWanderSystem;
 
-import client.Character;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotGrindSystem.BotSpotPicker;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 import soloMapling.server.ExecutorServiceManager;

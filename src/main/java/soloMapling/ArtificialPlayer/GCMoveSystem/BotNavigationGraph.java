@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import server.maps.Foothold;
-import server.maps.MapleMap;
+import org.gms.server.maps.Foothold;
+import org.gms.server.maps.MapleMap;
 
 import java.awt.*;
 import java.io.Serial;

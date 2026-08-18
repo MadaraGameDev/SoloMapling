@@ -1,12 +1,12 @@
 package soloMapling.server;
 
-import client.Character;
+import org.gms.client.Character;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import server.life.LifeFactory;
-import server.life.NPC;
-import server.maps.MapleMap;
-import tools.PacketCreator;
+import org.gms.server.life.LifeFactory;
+import org.gms.server.life.NPC;
+import org.gms.server.maps.MapleMap;
+import org.gms.util.PacketCreator;
 
 import java.awt.*;
 

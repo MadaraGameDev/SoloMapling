@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotFlavorSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 import soloMapling.server.BotTiming;

@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer;
 
-import client.BotClient;
-import client.Client;
+import org.gms.client.BotClient;
+import org.gms.client.Client;
 import soloMapling.server.SoloMaplingConstants.GameConstants;
 
 /**

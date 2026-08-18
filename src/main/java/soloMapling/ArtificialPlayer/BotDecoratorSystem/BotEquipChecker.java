@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotDecoratorSystem;
 
-import client.Character;
-import client.inventory.InventoryType;
-import net.server.Server;
+import org.gms.client.Character;
+import org.gms.client.inventory.InventoryType;
+import org.gms.net.server.Server;
 import soloMapling.server.ExecutorServiceManager;
 
 import java.util.ArrayList;

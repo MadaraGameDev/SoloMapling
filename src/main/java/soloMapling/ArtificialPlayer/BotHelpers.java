@@ -1,12 +1,12 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
-import client.Client;
-import net.server.Server;
-import net.server.channel.Channel;
-import server.ItemInformationProvider;
-import server.maps.MapItem;
-import server.maps.MapObject;
+import org.gms.client.Character;
+import org.gms.client.Client;
+import org.gms.net.server.Server;
+import org.gms.net.server.channel.Channel;
+import org.gms.server.ItemInformationProvider;
+import org.gms.server.maps.MapItem;
+import org.gms.server.maps.MapObject;
 
 import java.awt.*;
 import java.util.List;
@@ -16,14 +16,14 @@ public class BotHelpers {
 
     // BotHelpers - bot related stuff with regards to programming (object manipulation, etc)
 
-    public static client.Character getCharFromChannelStorage(int cid) {
+    public static Character getCharFromChannelStorage(int cid) {
         // just as a catch incacse i enter the cid without 20000
         if (cid < 1000) {
             cid = cid + 20000;
         }
 
         Channel channel = Server.getInstance().getChannel(0, 1);
-        client.Character fakechar = channel.getPlayerStorage().getCharacterById(cid);
+        Character fakechar = channel.getPlayerStorage().getCharacterById(cid);
         if (isBot(fakechar)) {
             return (fakechar);
         }

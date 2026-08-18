@@ -1,16 +1,16 @@
 package soloMapling.ArtificialPlayer.BotCommandsPack;
 
-import client.Character;
-import client.inventory.Equip;
-import client.inventory.Item;
-import net.packet.Packet;
-import server.maps.MapItem;
-import server.maps.MapObject;
-import server.maps.MapObjectType;
-import server.TimerManager;
+import org.gms.client.Character;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.Item;
+import org.gms.net.packet.Packet;
+import org.gms.server.maps.MapItem;
+import org.gms.server.maps.MapObject;
+import org.gms.server.maps.MapObjectType;
+import org.gms.server.TimerManager;
 import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotLogic;
-import tools.PacketCreator;
+import org.gms.util.PacketCreator;
 
 import java.awt.*;
 import java.util.Arrays;

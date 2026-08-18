@@ -1,6 +1,6 @@
 package soloMapling.server;
 
-import tools.DatabaseConnection;
+import org.gms.util.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

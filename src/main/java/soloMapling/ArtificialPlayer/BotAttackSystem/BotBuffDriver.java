@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotAttackSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.server.MethodScheduler;
 
 import java.util.List;

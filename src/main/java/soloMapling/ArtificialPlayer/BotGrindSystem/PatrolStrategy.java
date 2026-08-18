@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotSpotClaims;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 

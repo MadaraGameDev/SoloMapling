@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer.BotDecoratorSystem;
+import org.gms.client.BotTier;
 
-import client.Character;
-import client.Job;
-import client.inventory.InventoryType;
-import soloMapling.ArtificialPlayer.BotTier;
+import org.gms.client.Character;
+import org.gms.client.Job;
+import org.gms.client.inventory.InventoryType;
 import soloMapling.itemPool.EquipMetadataCache;
 
 import java.util.Random;

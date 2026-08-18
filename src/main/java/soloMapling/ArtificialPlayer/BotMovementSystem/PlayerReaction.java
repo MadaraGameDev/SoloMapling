@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotMovementSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotDialogueHandler;
 import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.server.ExecutorServiceManager;

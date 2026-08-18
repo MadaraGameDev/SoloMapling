@@ -1,11 +1,11 @@
 package soloMapling.FreeMarket.ShopOfferSystem;
 
-import client.Character;
-import server.maps.PlayerShop;
-import server.maps.PlayerShopItem;
+import org.gms.client.Character;
+import org.gms.server.maps.PlayerShop;
+import org.gms.server.maps.PlayerShopItem;
 import soloMapling.ArtificialPlayer.BotDialogueHandler;
 import soloMapling.server.MethodScheduler;
-import tools.PacketCreator;
+import org.gms.util.PacketCreator;
 
 import java.util.HashMap;
 import java.util.List;
@@ -84,7 +84,7 @@ public class ShopOfferResponse {
             shopItem.setPrice((int) acceptedPrice);
             shop.broadcast(PacketCreator.getPlayerShopItemUpdate(shop));
 
-            if (player.isLoggedin()) {
+            if (player.isLoggedIn()) {
                 player.sendPacket(PacketCreator.getWhisperReceive(
                         ownerName, player.getClient().getChannel(), false,
                         "Hey, I updated the price on " + itemName + " to " + formatPrice(acceptedPrice) + ". Come grab it! " + roomLabel
@@ -116,7 +116,7 @@ public class ShopOfferResponse {
             shopItem.setPrice((int) acceptedPrice);
             if (broadcastUpdate != null) broadcastUpdate.run();
 
-            if (player.isLoggedin()) {
+            if (player.isLoggedIn()) {
                 player.sendPacket(PacketCreator.getWhisperReceive(
                         ownerName, player.getClient().getChannel(), false,
                         "Hey, I updated the price on " + itemName + " to " + formatPrice(acceptedPrice) + ". Come grab it! " + roomLabel

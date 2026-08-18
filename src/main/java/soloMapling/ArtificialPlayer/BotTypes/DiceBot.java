@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotLogic;
@@ -8,8 +8,8 @@ import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.ArtificialPlayer.BotCommands;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.MessageQueue;
-import server.maps.MapItem;
-import server.maps.MapObject;
+import org.gms.server.maps.MapItem;
+import org.gms.server.maps.MapObject;
 
 import soloMapling.server.MethodScheduler;
 

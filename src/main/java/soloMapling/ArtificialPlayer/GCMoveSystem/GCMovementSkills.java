@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import constants.game.CharacterStance;
-import server.maps.Foothold;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.constants.game.CharacterStance;
+import org.gms.server.maps.Foothold;
+import org.gms.server.maps.MapleMap;
 
 import java.awt.Point;
 

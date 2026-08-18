@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotTypes.Blackjack;
 
-import client.Character;
-import server.maps.MapItem;
-import server.maps.MapObject;
+import org.gms.client.Character;
+import org.gms.server.maps.MapItem;
+import org.gms.server.maps.MapObject;
 import soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotCustomization;

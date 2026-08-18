@@ -1,7 +1,7 @@
 package soloMapling.server;
 
-import net.server.Server;
-import net.server.channel.Channel;
+import org.gms.net.server.Server;
+import org.gms.net.server.channel.Channel;
 
 public class SoloMaplingConstants {
 

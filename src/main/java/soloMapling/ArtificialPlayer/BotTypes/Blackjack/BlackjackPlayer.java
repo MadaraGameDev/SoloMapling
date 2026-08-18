@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotTypes.Blackjack;
 
-import client.Character;
-import server.maps.MapObject;
+import org.gms.client.Character;
+import org.gms.server.maps.MapObject;
 
 import java.awt.*;
 import java.util.ArrayList;

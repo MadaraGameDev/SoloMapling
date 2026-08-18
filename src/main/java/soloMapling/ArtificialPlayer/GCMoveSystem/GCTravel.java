@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import server.maps.MapleMap;
-import server.maps.Portal;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Portal;
 import soloMapling.ArtificialPlayer.BotTravelSystem.BotScriptedWarp;
 import soloMapling.BotLogger;
 

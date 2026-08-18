@@ -16,14 +16,8 @@
 *.onetoc2
 
 # Eclipse m2e generated files
-# Eclipse Core
 .project
-# JDT-specific (Eclipse Java Development Tools)
 .classpath
-
-# Database
-database/docker-db-data
-database/docker-pg-db-data
 
 # macOS files
 .DS_Store
@@ -31,7 +25,4 @@ BotLog.txt
 CLAUDE.md
 memory/MEMORY.md
 memory/no-auto-commits-solomapling.md
-src/main/java/soloMapling/Documents/Future Systems and Ideas.md
-src/main/java/soloMapling/Documents/Continuation Roadmap.md
-/src/main/java/soloMapling/Documents/3 Dev Diary 2 - Older stuff
 /cache

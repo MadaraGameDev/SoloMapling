@@ -2,8 +2,8 @@ package soloMapling.ArtificialPlayer.BotMovementSystem;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.packet.ByteBufInPacket;
-import net.packet.InPacket;
+import org.gms.net.packet.ByteBufInPacket;
+import org.gms.net.packet.InPacket;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.MovementPacket;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.MovementPacketRaw;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.SingleMoveCommand;

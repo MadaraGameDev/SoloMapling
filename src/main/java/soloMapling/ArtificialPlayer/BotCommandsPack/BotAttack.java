@@ -1,17 +1,17 @@
 package soloMapling.ArtificialPlayer.BotCommandsPack;
 
-import client.Character;
-import client.Skill;
-import client.SkillFactory;
-import client.inventory.Item;
-import client.inventory.InventoryType;
-import client.inventory.WeaponType;
-import net.server.channel.handlers.AbstractDealDamageHandler.AttackTarget;
-import server.ItemInformationProvider;
+import org.gms.client.Character;
+import org.gms.client.Skill;
+import org.gms.client.SkillFactory;
+import org.gms.client.inventory.Item;
+import org.gms.client.inventory.InventoryType;
+import org.gms.client.inventory.WeaponType;
+import org.gms.server.ItemInformationProvider;
 import soloMapling.ArtificialPlayer.BotAttackSystem.BotAttackData;
-import tools.PacketCreator;
+import org.gms.util.PacketCreator;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands.facingLeft;
@@ -55,7 +55,7 @@ public final class BotAttack {
         WeaponType weaponType = resolveEquippedWeaponType(chr);
         int bodyActionId = BotAttackData.randomActionFor(weaponType);
 
-        Map<Integer, AttackTarget> emptyTargets = Collections.emptyMap();
+        Map<Integer, List<Integer>> emptyTargets = Collections.emptyMap();
         chr.getMap().broadcastMessage(
                 chr,
                 PacketCreator.closeRangeAttack(
@@ -88,7 +88,7 @@ public final class BotAttack {
         WeaponType weaponType = resolveEquippedWeaponType(chr);
         int bodyActionId = BotAttackData.actionFor(skillId, weaponType);
 
-        Map<Integer, AttackTarget> emptyTargets = Collections.emptyMap();
+        Map<Integer, List<Integer>> emptyTargets = Collections.emptyMap();
         chr.getMap().broadcastMessage(
                 chr,
                 PacketCreator.closeRangeAttack(chr, skillId, resolveSkillLevel(skillId), facingMask,
@@ -111,7 +111,7 @@ public final class BotAttack {
         WeaponType weaponType = resolveEquippedWeaponType(chr);
         int bodyActionId = BotAttackData.actionFor(skillId, weaponType);
 
-        Map<Integer, AttackTarget> emptyTargets = Collections.emptyMap();
+        Map<Integer, List<Integer>> emptyTargets = Collections.emptyMap();
         chr.getMap().broadcastMessage(
                 chr,
                 PacketCreator.magicAttack(chr, skillId, resolveSkillLevel(skillId), facingMask,

@@ -1,16 +1,16 @@
 package soloMapling.MapVFX;
 
-import client.Character;
-import client.inventory.Equip;
-import client.inventory.InventoryType;
-import client.inventory.Item;
-import constants.inventory.ItemConstants;
-import server.ItemInformationProvider;
-import server.maps.MapleMap;
-import server.maps.Reactor;
-import server.maps.ReactorDropEntry;
-import server.maps.ReactorFactory;
-import tools.PacketCreator;
+import org.gms.client.Character;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.InventoryType;
+import org.gms.client.inventory.Item;
+import org.gms.constants.inventory.ItemConstants;
+import org.gms.server.ItemInformationProvider;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Reactor;
+import org.gms.server.maps.ReactorDropEntry;
+import org.gms.server.maps.ReactorFactory;
+import org.gms.util.PacketCreator;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -138,7 +138,7 @@ public class CustomReactor {
             p++;
 
             if (d.itemId == 0) {
-                int mesoDrop = (1000 * owner.getWorldServer().getMesoRate());
+                int mesoDrop = (int) (1000 * owner.getWorldServer().getMesoRate());
                 reactor.getMap().spawnMesoDrop(mesoDrop, reactor.getMap().calcDropPos(dropPos,
                         reactor.getPosition()), reactor, owner, false, (byte) 2, (short) 0);
             } else {
@@ -179,7 +179,7 @@ public class CustomReactor {
 
     // Uses back-and-forth spray pattern
     private static void delayedReactorDrops(Character owner, List<ReactorDropEntry> drops, Reactor reactor, Point dropPos) {
-        final int worldMesoRate = owner.getWorldServer().getMesoRate();
+        final int worldMesoRate = (int) owner.getWorldServer().getMesoRate();
 
         Point center2 = dropPos;
         short delay = 0;
@@ -207,7 +207,7 @@ public class CustomReactor {
 
     // Original single line spray drops
     private static void delayedReactorDropsStandard(Character owner, List<ReactorDropEntry> drops, Reactor reactor, Point dropPos, int posX) {
-        final int worldMesoRate = owner.getWorldServer().getMesoRate();
+        final int worldMesoRate = (int) owner.getWorldServer().getMesoRate();
 
         dropPos.x -= (12 * drops.size());
         short delay = 0;

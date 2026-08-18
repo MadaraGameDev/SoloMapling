@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotDecoratorSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotCustomization;
 
 import java.util.ArrayList;

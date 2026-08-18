@@ -1,11 +1,11 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import server.life.Monster;
-import server.maps.MapObject;
-import server.maps.MapObjectType;
+import org.gms.client.Character;
+import org.gms.server.life.Monster;
+import org.gms.server.maps.MapObject;
+import org.gms.server.maps.MapObjectType;
 import soloMapling.server.MethodScheduler;
-import tools.PacketCreator;
+import org.gms.util.PacketCreator;
 
 import java.awt.Point;
 import java.awt.Rectangle;

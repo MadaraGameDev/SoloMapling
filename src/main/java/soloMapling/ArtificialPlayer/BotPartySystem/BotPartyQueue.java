@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotPartySystem;
 
-import client.Character;
+import org.gms.client.Character;
 
 import java.util.concurrent.ConcurrentHashMap;
 

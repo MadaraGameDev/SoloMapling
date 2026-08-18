@@ -1,10 +1,10 @@
 package soloMapling.ArtificialPlayer.BotCommandsPack;
 
-import client.Character;
-import client.inventory.Item;
-import net.server.Server;
-import server.maps.MapleTVEffect;
-import tools.PacketCreator;
+import org.gms.client.Character;
+import org.gms.client.inventory.Item;
+import org.gms.net.server.Server;
+import org.gms.server.maps.MapleTVEffect;
+import org.gms.util.PacketCreator;
 
 import java.util.LinkedList;
 import java.util.List;

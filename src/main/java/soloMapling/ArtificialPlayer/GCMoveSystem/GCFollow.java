@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
+import org.gms.client.Character;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

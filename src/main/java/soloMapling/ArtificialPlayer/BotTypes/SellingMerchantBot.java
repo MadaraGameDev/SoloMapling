@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import client.inventory.Item;
+import org.gms.client.Character;
+import org.gms.client.inventory.Item;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.MessageQueue;

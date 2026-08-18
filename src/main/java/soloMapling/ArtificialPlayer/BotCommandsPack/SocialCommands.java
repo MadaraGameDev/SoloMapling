@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotCommandsPack;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotHelpers;
-import tools.PacketCreator;
+import org.gms.util.PacketCreator;
 
 import java.util.ArrayList;
 import java.util.List;

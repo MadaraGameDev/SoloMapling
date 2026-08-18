@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTradeSystem;
 
-import client.Character;
+import org.gms.client.Character;
 
 import static soloMapling.DebugUtilities.debugprint;
 
@@ -13,7 +13,7 @@ public class BotTradeHandler {
         this.chr = chr;
     }
 
-    public void setTradePartner(client.Character player) {
+    public void setTradePartner(org.gms.client.Character player) {
         this.tradePartner = player;
     }
 
@@ -21,7 +21,7 @@ public class BotTradeHandler {
         setTradePartner(null);
     }
 
-    protected client.Character getTradePartnerConfirmed() {
+    protected org.gms.client.Character getTradePartnerConfirmed() {
         try {
             return this.tradePartner;
         } catch (Exception e) {
@@ -29,7 +29,7 @@ public class BotTradeHandler {
         }
     }
 
-    public client.Character getTradePartnerRaw() {
+    public org.gms.client.Character getTradePartnerRaw() {
         try {
             return chr.getTrade().getPartner().getChr();
         } catch (Exception e) {

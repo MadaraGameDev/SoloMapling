@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTradeSystem;
 
-import client.Character;
+import org.gms.client.Character;
 
 public class TradeMessage {
 

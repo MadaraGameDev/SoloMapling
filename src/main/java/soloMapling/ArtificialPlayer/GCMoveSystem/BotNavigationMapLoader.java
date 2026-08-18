@@ -1,16 +1,16 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import provider.Data;
-import provider.DataProvider;
-import provider.DataProviderFactory;
-import provider.DataTool;
-import provider.wz.WZFiles;
-import server.maps.Foothold;
-import server.maps.FootholdTree;
-import server.maps.MapleMap;
-import server.maps.Portal;
-import server.maps.PortalFactory;
-import server.maps.Rope;
+import org.gms.provider.Data;
+import org.gms.provider.DataProvider;
+import org.gms.provider.DataProviderFactory;
+import org.gms.provider.DataTool;
+import org.gms.provider.wz.WZFiles;
+import org.gms.server.maps.Foothold;
+import org.gms.server.maps.FootholdTree;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Portal;
+import org.gms.server.maps.PortalFactory;
+import org.gms.server.maps.Rope;
 
 import java.awt.*;
 import java.util.LinkedList;

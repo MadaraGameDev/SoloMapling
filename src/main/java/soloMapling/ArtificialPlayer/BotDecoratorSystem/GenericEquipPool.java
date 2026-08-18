@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotDecoratorSystem;
 
 import com.esotericsoftware.yamlbeans.YamlReader;
-import server.ItemInformationProvider;
+import org.gms.server.ItemInformationProvider;
 import soloMapling.itemPool.EquipOmitList;
 
 import java.io.FileReader;

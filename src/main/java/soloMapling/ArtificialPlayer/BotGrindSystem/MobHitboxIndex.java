@@ -1,11 +1,11 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import provider.Data;
-import provider.DataProvider;
-import provider.DataProviderFactory;
-import provider.DataTool;
-import provider.wz.WZFiles;
-import tools.StringUtil;
+import org.gms.provider.Data;
+import org.gms.provider.DataProvider;
+import org.gms.provider.DataProviderFactory;
+import org.gms.provider.DataTool;
+import org.gms.provider.wz.WZFiles;
+import org.gms.util.StringUtil;
 
 import java.awt.Point;
 import java.util.Map;

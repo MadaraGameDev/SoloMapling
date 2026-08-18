@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
-import client.Client;
-import net.server.Server;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.client.Client;
+import org.gms.net.server.Server;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 import soloMapling.ArtificialPlayer.BotTypes.Blackjack.BlackjackDealerBot;

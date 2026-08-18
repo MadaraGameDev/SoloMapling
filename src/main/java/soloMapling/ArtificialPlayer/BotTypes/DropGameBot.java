@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import client.Skill;
-import client.SkillFactory;
+import org.gms.client.Character;
+import org.gms.client.Skill;
+import org.gms.client.SkillFactory;
 import soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotHelpers;
@@ -570,7 +570,7 @@ public class DropGameBot extends BotSM {
 
     private boolean isPlayerOnMap() {
         if (player == null) return false;
-        if (!player.isLoggedinWorld()) return false;
+        if (!player.isLoggedInWorld()) return false;
         return player.getMapId() == getChr().getMapId();
     }
 

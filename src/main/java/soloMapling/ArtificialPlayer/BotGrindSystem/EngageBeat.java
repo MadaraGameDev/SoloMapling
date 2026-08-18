@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import client.Character;
-import server.life.Monster;
+import org.gms.client.Character;
+import org.gms.server.life.Monster;
 import soloMapling.ArtificialPlayer.BotAttackSystem.BotAttackDriver;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 

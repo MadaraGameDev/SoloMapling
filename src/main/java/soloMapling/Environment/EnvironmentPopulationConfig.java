@@ -382,22 +382,22 @@ public final class EnvironmentPopulationConfig {
     /** Built-in defaults mirror the BeiDou-tuned hardcoded Wave 8 / town startup. */
     public static PopulationPlan defaults(String source) {
         List<TrainingCohort> cohorts = List.of(
-                new TrainingCohort(104000000, 20, 1, 15),
-                new TrainingCohort(100000000, 225, 10, 95),
-                new TrainingCohort(103000000, 225, 10, 65),
-                new TrainingCohort(102000000, 225, 10, 65),
-                new TrainingCohort(101000000, 225, 10, 65),
-                new TrainingCohort(105040300, 225, 25, 95),
-                new TrainingCohort(105070001, 180, 40, 95),
-                new TrainingCohort(200000000, 220, 30, 86),
-                new TrainingCohort(220000000, 200, 25, 95),
-                new TrainingCohort(220050300, 160, 70, 95),
-                new TrainingCohort(211000000, 200, 50, 80),
-                new TrainingCohort(211040300, 200, 60, 90),
-                new TrainingCohort(100000000, 25, 1, 9),
-                new TrainingCohort(103000000, 20, 1, 9),
-                new TrainingCohort(102000000, 20, 1, 9),
-                new TrainingCohort(101000000, 20, 1, 9)
+                new TrainingCohort(104000000, 5, 1, 15),
+                new TrainingCohort(100000000, 25, 10, 95),
+                new TrainingCohort(103000000, 25, 10, 65),
+                new TrainingCohort(102000000, 25, 10, 65),
+                new TrainingCohort(101000000, 25, 10, 65),
+                new TrainingCohort(105040300, 25, 25, 95),
+                new TrainingCohort(105070001, 20, 40, 95),
+                new TrainingCohort(200000000, 25, 30, 86),
+                new TrainingCohort(220000000, 20, 25, 95),
+                new TrainingCohort(220050300, 15, 70, 95),
+                new TrainingCohort(211000000, 20, 50, 80),
+                new TrainingCohort(211040300, 20, 60, 90),
+                new TrainingCohort(100000000, 5, 1, 9),
+                new TrainingCohort(103000000, 5, 1, 9),
+                new TrainingCohort(102000000, 5, 1, 9),
+                new TrainingCohort(101000000, 5, 1, 9)
         );
         return new PopulationPlan(
                 1,

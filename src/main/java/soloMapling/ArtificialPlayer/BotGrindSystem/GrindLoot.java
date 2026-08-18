@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import client.Character;
-import server.maps.MapItem;
-import server.maps.MapObject;
-import server.maps.MapObjectType;
+import org.gms.client.Character;
+import org.gms.server.maps.MapItem;
+import org.gms.server.maps.MapObject;
+import org.gms.server.maps.MapObjectType;
 import soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 

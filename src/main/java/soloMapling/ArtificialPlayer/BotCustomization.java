@@ -1,11 +1,11 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
-import client.inventory.BodyPart;
-import client.inventory.Equip;
-import client.inventory.InventoryType;
-import constants.inventory.ItemConstants;
-import server.ItemInformationProvider;
+import org.gms.client.Character;
+import org.gms.client.inventory.BodyPart;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.InventoryType;
+import org.gms.constants.inventory.ItemConstants;
+import org.gms.server.ItemInformationProvider;
 
 import java.util.List;
 import java.util.Random;

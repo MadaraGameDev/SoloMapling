@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotMovementSystem.NavigationSystem;
 
-import client.Character;
+import org.gms.client.Character;
 
 import java.awt.*;
 import java.util.List;

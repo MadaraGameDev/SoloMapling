@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import server.maps.MapleMap;
-import server.maps.Rope;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Rope;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands;
 
 import java.awt.Point;
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   .move(Character, int, int) — walk/jump/climb to a point on the current map.
  *   .follow(Character, Character) — dynamically tail a character.
  * 
- * Both drive a raw client.Character, so any BotSM subtype calls them via
+ * Both drive a raw org.gms.client.Character, so any BotSM subtype calls them via
  * getChr(), exactly like the recorded-path MovementCommands. The two engines
  * coexist via the shared MovementCommands movement lock (acquired on enable, released on
  * disable).

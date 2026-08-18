@@ -1,8 +1,8 @@
 package soloMapling.itemPool;
 
-import client.inventory.Equip;
-import constants.inventory.EquipType;
-import server.ItemInformationProvider;
+import org.gms.client.inventory.Equip;
+import org.gms.constants.inventory.EquipType;
+import org.gms.server.ItemInformationProvider;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static constants.inventory.EquipType.getEquipTypeById;
+import static org.gms.constants.inventory.EquipType.getEquipTypeById;
 
 public class ScrollInfoManager {
 

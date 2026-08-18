@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import client.Character;
+import org.gms.client.Character;
 import com.esotericsoftware.yamlbeans.YamlReader;
 import soloMapling.ArtificialPlayer.BotTypes.DiceBot;
 

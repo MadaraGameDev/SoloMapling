@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import server.Trade;
+import org.gms.client.Character;
+import org.gms.server.Trade;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.MessageQueue;
@@ -56,7 +56,7 @@ public class NXMerchantBot extends BotSM {
 
     private void setupNXSale() {
         // Use a filler item as the visual representation in trade
-        client.inventory.Item filler = generateItem(4031865, 1, 100);
+        org.gms.client.inventory.Item filler = generateItem(4031865, 1, 100);
         getTradeInventory().setItemForSaleMain(filler);
         getTradeWants().resetTradeWants();
         int fiftyMill = 50_000_000;

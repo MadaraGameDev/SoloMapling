@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTradeSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotBlockList;
 
 public class BotTradeLogic {

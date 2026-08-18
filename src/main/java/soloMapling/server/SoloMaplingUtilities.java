@@ -1,10 +1,10 @@
 package soloMapling.server;
 
-import client.Character;
-import net.server.Server;
-import net.server.channel.Channel;
-import net.server.world.World;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.net.server.Server;
+import org.gms.net.server.channel.Channel;
+import org.gms.net.server.world.World;
+import org.gms.server.maps.MapleMap;
 
 import java.util.List;
 import java.util.Random;
@@ -50,7 +50,7 @@ public class SoloMaplingUtilities {
         }
     }
 
-    public static client.Character getChr(int userId) {
+    public static org.gms.client.Character getChr(int userId) {
         Character chr = SoloMaplingConstants.mainChannel.getPlayerStorage().getCharacterById(userId);
         return chr;
     }

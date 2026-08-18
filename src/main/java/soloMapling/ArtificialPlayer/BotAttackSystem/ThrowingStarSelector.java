@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotAttackSystem;
 
-import client.Character;
-import client.inventory.WeaponType;
-import constants.id.ItemId;
+import org.gms.client.Character;
+import org.gms.client.inventory.WeaponType;
+import org.gms.constants.id.ItemId;
 import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.ArtificialPlayer.BotCommandsPack.BotAttack;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;

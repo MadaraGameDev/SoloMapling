@@ -1,6 +1,6 @@
 package soloMapling.FreeMarket;
 
-import client.inventory.Item;
+import org.gms.client.inventory.Item;
 
 import java.util.Random;
 import java.util.*;

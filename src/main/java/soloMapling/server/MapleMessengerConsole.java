@@ -1,7 +1,7 @@
 package soloMapling.server;
 
-import client.Character;
-import client.command.CommandsExecutor;
+import org.gms.client.Character;
+import org.gms.client.command.CommandsExecutor;
 import soloMapling.ArtificialPlayer.BotCommandsPack.MapleMessengerCommands;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorateNX;
 import soloMapling.ArtificialPlayer.BotDecoratorSystem.BotDecorationQueue;
@@ -185,7 +185,7 @@ public class MapleMessengerConsole {
                 EquipMetadataCache cache = EquipMetadataCache.get();
                 int total = cache.all().size();
                 int cashTotal = 0;
-                for (constants.inventory.EquipType et : constants.inventory.EquipType.values()) {
+                for (org.gms.constants.inventory.EquipType et : org.gms.constants.inventory.EquipType.values()) {
                     cashTotal += cache.getCashByType(et).size();
                 }
                 MapleMessengerCommands.sendColoredConsoleMessage(chr,

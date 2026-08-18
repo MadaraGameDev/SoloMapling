@@ -1,10 +1,10 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 
-import tools.Randomizer;
+import org.gms.util.Randomizer;
 
 public class BotCommands {
 

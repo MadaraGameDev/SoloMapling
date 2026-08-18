@@ -1,12 +1,12 @@
 package soloMapling.ArtificialPlayer.BotCommandsPack;
 
-import client.Character;
-import net.server.Server;
-import net.server.coordinator.world.InviteCoordinator;
-import net.server.world.Messenger;
-import net.server.world.MessengerCharacter;
-import net.server.world.World;
-import tools.PacketCreator;
+import org.gms.client.Character;
+import org.gms.net.server.Server;
+import org.gms.net.server.coordinator.world.InviteCoordinator;
+import org.gms.net.server.world.Messenger;
+import org.gms.net.server.world.MessengerCharacter;
+import org.gms.net.server.world.World;
+import org.gms.util.PacketCreator;
 
 import java.util.Objects;
 

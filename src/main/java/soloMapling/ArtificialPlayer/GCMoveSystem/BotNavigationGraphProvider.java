@@ -2,11 +2,11 @@ package soloMapling.ArtificialPlayer.GCMoveSystem;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import server.maps.Foothold;
-import server.maps.MapManager;
-import server.maps.MapleMap;
-import server.maps.Portal;
-import server.maps.Rope;
+import org.gms.server.maps.Foothold;
+import org.gms.server.maps.MapManager;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Portal;
+import org.gms.server.maps.Rope;
 
 import java.awt.*;
 import java.io.IOException;

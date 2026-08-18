@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotDecoratorSystem;
 
-import client.Character;
-import client.SkinColor;
+import org.gms.client.Character;
+import org.gms.client.SkinColor;
 
 public class BotDecorateBody {
 

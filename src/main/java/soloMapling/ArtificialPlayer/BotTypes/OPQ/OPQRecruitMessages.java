@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTypes.OPQ;
 
-import client.Character;
+import org.gms.client.Character;
 
 import java.util.ArrayList;
 import java.util.Arrays;

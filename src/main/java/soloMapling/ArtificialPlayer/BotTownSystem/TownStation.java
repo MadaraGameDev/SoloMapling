@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotTownSystem;
 
-import client.Character;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotSpotClaims;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 

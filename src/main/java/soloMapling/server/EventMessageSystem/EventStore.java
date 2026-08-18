@@ -1,23 +1,15 @@
 package soloMapling.server.EventMessageSystem;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static soloMapling.DebugUtilities.debugprint;
-
-/*
-Shared historical database for all events
-Central ring buffer that keeps last N events for any bot to query later
-Purpose: Non-subscribed bots might want to check recent events
-Pull based
- */
 
 public class EventStore {
     private final GameEvent[] buffer;
     private final int capacity;
-    private int head = 0;
-    private int size = 0;
+    private int head;
+    private int size;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     public EventStore(int capacity) {
@@ -26,7 +18,6 @@ public class EventStore {
     }
 
     public void add(GameEvent event) {
-        debugprint("Adding event to EventStore: ", event.getPlayerName(), event.getId(), event.getType());
         lock.writeLock().lock();
         try {
             buffer[head] = event;
@@ -49,8 +40,7 @@ public class EventStore {
             List<GameEvent> results = new ArrayList<>();
             for (int i = 0; i < size; i++) {
                 GameEvent event = buffer[i];
-                if (event != null && event.getType() == type &&
-                        event.getTimestamp() >= sinceTimestamp) {
+                if (event != null && event.getType() == type && event.getTimestamp() >= sinceTimestamp) {
                     results.add(event);
                 }
             }
@@ -66,10 +56,8 @@ public class EventStore {
             List<GameEvent> results = new ArrayList<>();
             for (int i = 0; i < size; i++) {
                 GameEvent event = buffer[i];
-                if (event != null &&
-                        event.getWorld() == world &&
-                        event.getChannel() == channel &&
-                        (mapId == null || event.getMap().getId() == mapId)) {
+                if (event != null && event.getWorld() == world && event.getChannel() == channel
+                        && (mapId == null || event.getMap().getId() == mapId)) {
                     results.add(event);
                 }
             }
@@ -83,28 +71,11 @@ public class EventStore {
         lock.readLock().lock();
         try {
             List<GameEvent> results = new ArrayList<>();
-            int start = (head - Math.min(count, size) + capacity) % capacity;
-            for (int i = 0; i < Math.min(count, size); i++) {
+            int eventCount = Math.min(count, size);
+            int start = (head - eventCount + capacity) % capacity;
+            for (int i = 0; i < eventCount; i++) {
                 GameEvent event = buffer[(start + i) % capacity];
                 if (event != null) {
-                    results.add(event);
-                }
-            }
-            return results;
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public List<GameEvent> getEventsInTimeRange(long startTime, long endTime) {
-        lock.readLock().lock();
-        try {
-            List<GameEvent> results = new ArrayList<>();
-            for (int i = 0; i < size; i++) {
-                GameEvent event = buffer[i];
-                if (event != null &&
-                        event.getTimestamp() >= startTime &&
-                        event.getTimestamp() <= endTime) {
                     results.add(event);
                 }
             }

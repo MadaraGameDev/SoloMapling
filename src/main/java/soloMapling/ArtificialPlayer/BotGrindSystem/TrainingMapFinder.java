@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import server.maps.MiniDungeonInfo;
+import org.gms.server.maps.MiniDungeonInfo;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 
 import java.util.ArrayList;

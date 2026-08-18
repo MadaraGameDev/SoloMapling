@@ -1,7 +1,7 @@
 package soloMapling.FreeMarket.ShopOfferSystem;
 
-import server.ItemInformationProvider;
-import server.maps.PlayerShopItem;
+import org.gms.server.ItemInformationProvider;
+import org.gms.server.maps.PlayerShopItem;
 
 import java.util.ArrayList;
 import java.util.List;

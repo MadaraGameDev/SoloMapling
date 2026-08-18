@@ -1,7 +1,7 @@
 package soloMapling.server.EventMessageSystem;
 
-import client.Character;
-import client.inventory.Item;
+import org.gms.client.Character;
+import org.gms.client.inventory.Item;
 
 /*
 Creates events based on type

@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTradeSystem;
 
-import client.inventory.Item;
+import org.gms.client.inventory.Item;
 
 import java.util.ArrayList;
 import java.util.HashMap;

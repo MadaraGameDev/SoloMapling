@@ -1,8 +1,8 @@
 package soloMapling.itemPool;
 
-import client.inventory.Equip;
-import client.inventory.InventoryType;
-import client.inventory.Item;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.InventoryType;
+import org.gms.client.inventory.Item;
 
 import static soloMapling.ArtificialPlayer.BotLogic.generateCleanEquip;
 import static soloMapling.DebugUtilities.debugprint;

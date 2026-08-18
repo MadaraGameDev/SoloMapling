@@ -1,4 +1,5 @@
 package soloMapling.ArtificialPlayer.BotDecoratorSystem;
+import org.gms.client.BotTier;
 
 /**
  * Represents the desirability/quality tier of a cosmetic item (hair, eyes, etc.).

@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotMessagingSystem;
 
-import client.Character;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
 
 public class ChatMessage {
     private final Character sender;

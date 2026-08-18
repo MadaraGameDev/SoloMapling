@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import server.ItemInformationProvider;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.ItemInformationProvider;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotDialogueHandler;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 import soloMapling.ArtificialPlayer.BotSM;

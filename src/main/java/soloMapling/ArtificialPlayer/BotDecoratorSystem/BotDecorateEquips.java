@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotDecoratorSystem;
 
-import client.Character;
-import client.Job;
-import constants.inventory.EquipType;
+import org.gms.client.Character;
+import org.gms.client.Job;
+import org.gms.constants.inventory.EquipType;
 import soloMapling.ArtificialPlayer.BotCustomization;
 
 import java.util.ArrayList;

@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
-import provider.wz.WZFiles;
-import server.life.Monster;
+import org.gms.provider.wz.WZFiles;
+import org.gms.server.life.Monster;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;

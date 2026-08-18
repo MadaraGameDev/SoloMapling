@@ -1,12 +1,12 @@
 package soloMapling.FreeMarket;
 
-import client.Job;
-import client.inventory.Equip;
-import client.inventory.InventoryType;
-import client.inventory.Item;
-import constants.inventory.EquipType;
-import constants.inventory.ItemConstants;
-import server.ItemInformationProvider;
+import org.gms.client.Job;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.InventoryType;
+import org.gms.client.inventory.Item;
+import org.gms.constants.inventory.EquipType;
+import org.gms.constants.inventory.ItemConstants;
+import org.gms.server.ItemInformationProvider;
 import soloMapling.itemPool.DesirableEquipList;
 import soloMapling.itemPool.EquipMetadataCache;
 import soloMapling.itemPool.ItemNode;
@@ -195,7 +195,7 @@ public class EquipListGenerator {
         if (ItemConstants.getInventoryType(id) == InventoryType.EQUIP) {
             cleanItem = ii.getEquipById(id);
         } else {
-            cleanItem = new client.inventory.Item(id, (short) 0, (short) 1);
+            cleanItem = new org.gms.client.inventory.Item(id, (short) 0, (short) 1);
         }
         return cleanItem;
     }

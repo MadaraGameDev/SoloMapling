@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotChatterSystem.BotChatter;
 import soloMapling.ArtificialPlayer.ConversationManager;
 import soloMapling.ArtificialPlayer.BotDialogueHandler;
@@ -19,7 +19,7 @@ import soloMapling.server.EventMessageSystem.EventBus;
 import soloMapling.server.EventMessageSystem.EventType;
 import soloMapling.server.EventMessageSystem.GameEvent;
 import soloMapling.server.MethodScheduler;
-import tools.PacketCreator;
+import org.gms.util.PacketCreator;
 
 import java.awt.Point;
 import java.util.List;

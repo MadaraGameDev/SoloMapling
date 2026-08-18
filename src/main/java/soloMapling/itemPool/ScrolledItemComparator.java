@@ -1,6 +1,6 @@
 package soloMapling.itemPool;
 
-import client.inventory.Equip;
+import org.gms.client.inventory.Equip;
 
 import static soloMapling.FreeMarket.EquipListGenerator.generateCleanItemEquip;
 

@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import client.Character;
+import org.gms.client.Character;
 
 // Maps a bot's job to how it moves while grinding. Gated on job (which implies job-tier/level), so low-level
 // bots stay PLANTED (slow = organic) and only advanced classes blink/dash. Ours.

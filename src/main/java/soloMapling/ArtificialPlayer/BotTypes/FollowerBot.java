@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import net.server.world.Party;
-import net.server.world.PartyCharacter;
+import org.gms.client.Character;
+import org.gms.net.server.world.Party;
+import org.gms.net.server.world.PartyCharacter;
 import soloMapling.ArtificialPlayer.BotDialogueHandler;
 import soloMapling.ArtificialPlayer.BotOptionMenu;
 import soloMapling.ArtificialPlayer.BotSM;

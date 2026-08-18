@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotDialogueHandler;

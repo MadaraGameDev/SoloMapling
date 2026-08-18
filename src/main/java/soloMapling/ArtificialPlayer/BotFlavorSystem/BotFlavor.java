@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotFlavorSystem;
 
-import client.Character;
-import client.inventory.WeaponType;
+import org.gms.client.Character;
+import org.gms.client.inventory.WeaponType;
 import soloMapling.ArtificialPlayer.BotAttackSystem.BotAttackConfig;
 import soloMapling.ArtificialPlayer.BotAttackSystem.BotAttackProfile;
 import soloMapling.ArtificialPlayer.BotAttackSystem.BotBuffConfig;

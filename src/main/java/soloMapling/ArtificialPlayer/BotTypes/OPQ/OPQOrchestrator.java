@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotTypes.OPQ;
 
-import client.Character;
-import server.maps.MapleMap;
-import server.maps.Reactor;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Reactor;
 import soloMapling.ArtificialPlayer.BotTypes.OPQ.OPQSharedContext.OPQPhase;
 import soloMapling.server.ExecutorServiceManager;
 

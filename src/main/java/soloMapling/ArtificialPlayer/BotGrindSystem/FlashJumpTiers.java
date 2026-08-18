@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import client.Character;
+import org.gms.client.Character;
 
 // Level tier for the flash-jump dash: how much of the full (maxed) dash a bot may use. Skill-authentic
 // flavor knob — a Hermit still leveling Flash Jump dashes visibly shorter than a Night Lord — resolved

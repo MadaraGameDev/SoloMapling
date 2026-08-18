@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotDecoratorSystem;
 
 import com.esotericsoftware.yamlbeans.YamlReader;
-import constants.inventory.EquipType;
+import org.gms.constants.inventory.EquipType;
 import soloMapling.itemPool.EquipMetadataCache;
 
 import java.io.FileReader;

@@ -1,14 +1,14 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import client.Job;
-import client.inventory.InventoryType;
-import client.inventory.Item;
-import net.server.world.Party;
-import net.server.world.PartyCharacter;
-import server.ItemInformationProvider;
-import server.maps.FieldLimit;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.client.Job;
+import org.gms.client.inventory.InventoryType;
+import org.gms.client.inventory.Item;
+import org.gms.net.server.world.Party;
+import org.gms.net.server.world.PartyCharacter;
+import org.gms.server.ItemInformationProvider;
+import org.gms.server.maps.FieldLimit;
+import org.gms.server.maps.MapleMap;
 
 import java.io.Serial;
 import java.io.Serializable;

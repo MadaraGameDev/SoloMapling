@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer.BotTradeSystem;
 
-import client.Character;
-import client.inventory.Equip;
-import client.inventory.Item;
-import server.Trade;
+import org.gms.client.Character;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.Item;
+import org.gms.server.Trade;
 import soloMapling.ArtificialPlayer.BotBlockList;
 import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.server.BotTiming;

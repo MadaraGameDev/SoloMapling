@@ -1,9 +1,9 @@
 package soloMapling.FreeMarket;
 
-import client.Job;
-import client.inventory.InventoryType;
-import client.inventory.Item;
-import server.maps.PlayerShopItem;
+import org.gms.client.Job;
+import org.gms.client.inventory.InventoryType;
+import org.gms.client.inventory.Item;
+import org.gms.server.maps.PlayerShopItem;
 import soloMapling.server.MapleVersionManager;
 import soloMapling.itemPool.ItemNode;
 import soloMapling.itemPool.QuantitySelector;

@@ -1,11 +1,11 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import provider.Data;
-import provider.DataProvider;
-import provider.DataProviderFactory;
-import provider.DataTool;
-import provider.wz.WZFiles;
-import server.maps.Portal;
+import org.gms.provider.Data;
+import org.gms.provider.DataProvider;
+import org.gms.provider.DataProviderFactory;
+import org.gms.provider.DataTool;
+import org.gms.provider.wz.WZFiles;
+import org.gms.server.maps.Portal;
 import soloMapling.ArtificialPlayer.BotTravelSystem.BotScriptedWarp;
 
 import static soloMapling.server.MapleVersionManager.isPortalinCurrentVersion;

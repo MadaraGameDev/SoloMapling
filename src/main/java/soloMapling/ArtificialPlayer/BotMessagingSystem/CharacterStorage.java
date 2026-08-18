@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotMessagingSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotSM;
 
 import java.util.*;

@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.BotCommandsPack;
 
-import client.Character;
-import client.inventory.Equip;
-import tools.PacketCreator;
+import org.gms.client.Character;
+import org.gms.client.inventory.Equip;
+import org.gms.util.PacketCreator;
 
 import static soloMapling.ArtificialPlayer.BotMovementSystem.MovementPacketConstructor.createIdleStandlingPacket;
 

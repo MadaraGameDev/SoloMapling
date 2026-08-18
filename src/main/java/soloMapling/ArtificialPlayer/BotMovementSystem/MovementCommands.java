@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer.BotMovementSystem;
 
-import client.Character;
-import net.packet.InPacket;
-import server.maps.Foothold;
-import server.maps.Portal;
+import org.gms.client.Character;
+import org.gms.net.packet.InPacket;
+import org.gms.server.maps.Foothold;
+import org.gms.server.maps.Portal;
 import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.MovementPacket;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.SingleMoveCommand;
@@ -11,10 +11,10 @@ import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.Movemen
 import soloMapling.ArtificialPlayer.BotMovementSystem.NavigationSystem.NavigationElement;
 import soloMapling.ArtificialPlayer.BotMovementSystem.NavigationSystem.PathFinder;
 import soloMapling.ArtificialPlayer.GCMoveSystem.LodCounts;
-import tools.PacketCreator;
-import tools.exceptions.EmptyMovementException;
+import org.gms.util.PacketCreator;
+import org.gms.exception.EmptyMovementException;
 
-import server.maps.MapleMap;
+import org.gms.server.maps.MapleMap;
 
 import java.awt.*;
 import java.util.Map;
@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Math.abs;
-import static net.server.channel.handlers.AbstractMovementPacketHandler.updatePositionBot;
+import static org.gms.net.server.channel.handlers.AbstractMovementPacketHandler.updatePositionBot;
 import static soloMapling.ArtificialPlayer.BotLogic.isPointNear;
 import static soloMapling.ArtificialPlayer.BotMovementSystem.InPacketReader.getMovementRecording;
 import static soloMapling.ArtificialPlayer.BotMovementSystem.MovementPacketConstructor.createArtificialStopPacket;

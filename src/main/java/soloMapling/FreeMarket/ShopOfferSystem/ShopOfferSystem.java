@@ -1,11 +1,11 @@
 package soloMapling.FreeMarket.ShopOfferSystem;
 
-import client.Character;
-import server.maps.HiredMerchant;
-import server.maps.PlayerShop;
-import server.maps.PlayerShopItem;
+import org.gms.client.Character;
+import org.gms.server.maps.HiredMerchant;
+import org.gms.server.maps.PlayerShop;
+import org.gms.server.maps.PlayerShopItem;
 import soloMapling.server.MethodScheduler;
-import tools.PacketCreator;
+import org.gms.util.PacketCreator;
 
 import java.util.Iterator;
 import java.util.List;

@@ -1,10 +1,10 @@
 package soloMapling.itemPool;
 
-import client.Character;
-import client.Client;
-import client.Job;
-import constants.inventory.EquipType;
-import server.ItemInformationProvider;
+import org.gms.client.Character;
+import org.gms.client.Client;
+import org.gms.client.Job;
+import org.gms.constants.inventory.EquipType;
+import org.gms.server.ItemInformationProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;

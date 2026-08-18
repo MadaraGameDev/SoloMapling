@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import constants.id.MapId;
+import org.gms.constants.id.MapId;
 
 import java.awt.Point;
 import java.util.Map;

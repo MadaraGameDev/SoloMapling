@@ -1,50 +1,35 @@
 package soloMapling.ArtificialPlayer.BotTradeSystem;
 
-import client.Character;
+import org.gms.client.Character;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static soloMapling.DebugUtilities.debugprint;
+public final class BotTradeQueue {
+    private static final BotTradeQueue INSTANCE = new BotTradeQueue();
 
-public class BotTradeQueue {
-
-    // Written from netty threads (Trade.inviteTrade) and read from bot tick virtual threads.
-    private final Map<Character, Character> queues;
-    private static final BotTradeQueue botTradeQueue = new BotTradeQueue();
+    private final Map<Character, Character> queues = new ConcurrentHashMap<>();
 
     private BotTradeQueue() {
-        queues = new ConcurrentHashMap<>();
     }
 
     public static BotTradeQueue getInstance() {
-        return botTradeQueue;
+        return INSTANCE;
     }
 
-    public void addTradeRequest(Character fakechar, Character partner) {
-        debugprint("addTradeRequest");
-        queues.putIfAbsent(fakechar, partner);
+    public void addTradeRequest(Character bot, Character partner) {
+        queues.putIfAbsent(bot, partner);
     }
 
-    public Character getTradeRequest(Character fakechar) {
-        if (hasPendingTrades(fakechar)) {
-            return queues.get(fakechar);
-        }
-        return null;
+    public Character getTradeRequest(Character bot) {
+        return queues.get(bot);
     }
 
-    public boolean hasPendingTrades(Character fakechar) {
-        if (queues.containsKey(fakechar)) {
-            return true;
-        }
-        return false;
+    public boolean hasPendingTrades(Character bot) {
+        return queues.containsKey(bot);
     }
 
-    public void removeTradeRequest(Character fakechar) {
-        if (hasPendingTrades(fakechar)) {
-            queues.remove(fakechar);
-        }
+    public void removeTradeRequest(Character bot) {
+        queues.remove(bot);
     }
-
-
 }

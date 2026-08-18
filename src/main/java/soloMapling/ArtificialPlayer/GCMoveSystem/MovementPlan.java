@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import server.maps.MapleMap;
+import org.gms.server.maps.MapleMap;
 
 import java.awt.Point;
 import java.util.List;

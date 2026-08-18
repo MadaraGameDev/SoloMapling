@@ -1,20 +1,40 @@
 # SoloMapling population configuration
 
-All population knobs live in **`EnvironmentPopulation.yaml`**:
+One file drives world population:
 
-- Wave counts / `scale` / TrainingBot hubs
-- Ambient towns under `waves.town_presence.towns` (formerly `TownPresence.yaml`)
+**`EnvironmentPopulation.yaml`**
 
-`TownPresence.yaml` is a deprecated stub and is not loaded.
+| Section | Role |
+|---------|------|
+| `scale` | Multiplies Henesys / FM / merchant / training counts |
+| `waves.*` | Wave toggles and batch sizes |
+| `waves.training.cohorts` | TrainingBot spawn hubs + level bands |
+| `waves.town_presence.towns` | Ambient SocialBot / wanderer counts (was `TownPresence.yaml`) |
 
-## Where the file is loaded (BeiDou host)
+`TownPresence.yaml` is deprecated and no longer read (stub only).
 
-**Not from `BeiDou-boot.jar`.** Resolution order:
+## Where to put the file at runtime
 
-1. `solomapling.population-config` in BeiDou `application.yml` (optional path override)
-2. Classpath resource inside `plugins/solomapling-plugin-*.jar`:  
-   `soloMapling/Environment/EnvironmentPopulation.yaml`
+**Do not put it in the host boot jar.** Resolution order:
 
-Cosmic in-tree builds use the same relative path under the Cosmic working directory.
+1. Optional override: host config → `solomapling.population-config: <path>`
+2. Classpath inside **`plugins/solomapling-plugin-*.jar`**:  
+   `soloMapling/Environment/EnvironmentPopulation.yaml` (bundled default)
 
-For the BeiDou plugin build and tests, see [beidou-plugin/src/main/java/soloMapling/Environment/CONFIG.md](../../../beidou-plugin/src/main/java/soloMapling/Environment/CONFIG.md).
+To override without rebuilding the plugin, set `solomapling.population-config` to an external YAML path.
+
+## Live commands (GM ≥ 4)
+
+```
+!env population show|reload   # whole file (waves + towns)
+!env townpresence reload      # same file; refreshes town plan + social map scope
+```
+
+`reload` re-reads YAML but does not despawn bots already online — restart (or a full environment load) to apply new counts.
+
+## Verify
+
+```bash
+cd /path/to/SoloMapling
+mvn test -Dtest=EnvironmentPopulationConfigTest -Dsurefire.failIfNoSpecifiedTests=false
+```

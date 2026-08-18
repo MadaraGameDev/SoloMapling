@@ -1,9 +1,10 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
-import client.Client;
-import client.Job;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.client.Client;
+import org.gms.client.Job;
+import org.gms.server.maps.MapleMap;
+import org.gms.util.DatabaseConnection;
 import soloMapling.ArtificialPlayer.BotAttackSystem.BotBuffDriver;
 import soloMapling.ArtificialPlayer.BotBuffRequestSystem.BotBuffRequestHandler;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
@@ -11,7 +12,9 @@ import soloMapling.server.SoloMaplingConstants;
 import soloMapling.server.SoloMaplingUtilities;
 
 import java.awt.*;
-import java.sql.SQLException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,6 +38,37 @@ public class BotGeneration {
     // grab the same id, silently overwriting one bot with another in storage.
     private static final AtomicInteger currentBotCount = new AtomicInteger(100);
 
+    /** Resolved once: prefer character named "fmbot", else fall back to CID 2. */
+    private static volatile int templateCharacterId = -1;
+
+    private static int templateCharacterId() {
+        if (templateCharacterId > 0) {
+            return templateCharacterId;
+        }
+        synchronized (BotGeneration.class) {
+            if (templateCharacterId > 0) {
+                return templateCharacterId;
+            }
+            try (Connection con = DatabaseConnection.getConnection();
+                 PreparedStatement ps = con.prepareStatement(
+                         "SELECT id FROM characters WHERE name = ? LIMIT 1")) {
+                ps.setString(1, "fmbot");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        templateCharacterId = rs.getInt("id");
+                        debugprint("[BotGeneration] template character fmbot id=" + templateCharacterId);
+                        return templateCharacterId;
+                    }
+                }
+            } catch (Exception e) {
+                debugprint("[BotGeneration] failed to resolve fmbot template: " + e);
+            }
+            templateCharacterId = 2; // Cosmic default
+            debugprint("[BotGeneration] falling back to template CID 2");
+            return templateCharacterId;
+        }
+    }
+
     /**
      * Worst-case duration of the spawn choreography (pre-drop delay 0.5-1.2s
      * + portal lag 1.5s + drop-down playback + optional turn-around delay
@@ -57,14 +91,9 @@ public class BotGeneration {
         }
 
         int botId = 999;
-        int baseId = 2; // Base Bot Character
+        int baseId = templateCharacterId();
 
-        try {
-            Character chr = Character.loadCharFromDB(baseId, getBotClient(), false);
-            consoleBot = chr;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        consoleBot = Character.loadCharFromDB(baseId, getBotClient(), false);
 
         consoleBot = setConsoleBot(consoleBot, botId); // Bot onDemandBot
         addBotToServer(consoleBot);
@@ -81,15 +110,10 @@ public class BotGeneration {
 
     // forcedJobId > 0 pins the exact job (GM 'trainhere' test spawn); 0 = a random job for the class.
     public static int createBot(Point pos, MapleMap map, int baseClass, int minLevel, int maxLevel, int forcedJobId) {
-        int cid = 2; // CID 2 = Base Bot Character
+        int cid = templateCharacterId();
 
         Character bot = null;
-        try {
-            Character chr = Character.loadCharFromDB(cid, getBotClient(), false);
-            bot = chr;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        bot = Character.loadCharFromDB(cid, getBotClient(), false);
         int botId = SoloMaplingConstants.GameConstants.BOT_BASE_ID + currentBotCount.getAndIncrement();
         bot = setBotStats(bot, botId); // Bot onDemandBot
         addBotToServer(bot);
@@ -163,7 +187,7 @@ public class BotGeneration {
         onDemandBot.setClient(getBotClient());
         onDemandBot.setName("Console");
 
-        onDemandBot.setID(botId);
+        onDemandBot.setId(botId);
         onDemandBot.setFame(botId); // debug purposes
         onDemandBot.setLevel(69);
         onDemandBot.setJob(Job.getById(420));
@@ -175,7 +199,7 @@ public class BotGeneration {
         Character onDemandBot = baseChr; // Character.getDefault(c)
         onDemandBot.setClient(getBotClient());
         onDemandBot.setName(getRandomCharacterIGN());
-        onDemandBot.setID(botId);
+        onDemandBot.setId(botId);
         onDemandBot.setFame(botId); // debug purposes
         return onDemandBot;
     }
@@ -190,9 +214,11 @@ public class BotGeneration {
     }
 
     private static void addBotToServer(Character fakechar) {
-//        final Channel channel = Server.getInstance().getChannel(BotSM.GameConstants.WORLD_SCANIA, BotSM.GameConstants.CHANNEL_1);
+        // Mark bot as present in channel world so isLoggedInWorld() gates pass.
+        // Avoid setEnteredChannelWorld() — it touches PartySearch / playerAway maps
+        // and deadlocks under mass parallel spawn.
+        fakechar.markPresentInWorld();
         channel.addPlayer(fakechar);
-//        World world = Server.getInstance().getWorld(BotSM.GameConstants.WORLD_SCANIA);
         world.getPlayerStorage().addPlayer(fakechar);
     }
 

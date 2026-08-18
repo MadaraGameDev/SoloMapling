@@ -1,10 +1,10 @@
 package soloMapling.ArtificialPlayer.BotMovementSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.packet.ByteBufInPacket;
-import net.packet.InPacket;
+import org.gms.net.packet.ByteBufInPacket;
+import org.gms.net.packet.InPacket;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.SingleMoveCommand;
 
 import java.util.ArrayList;

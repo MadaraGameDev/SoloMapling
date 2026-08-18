@@ -1,19 +1,19 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
-import client.inventory.BodyPart;
-import client.inventory.Equip;
-import client.inventory.InventoryType;
-import client.inventory.Item;
-import constants.inventory.ItemConstants;
-import server.ItemInformationProvider;
-import server.life.Monster;
-import server.life.NPC;
-import server.life.PlayerNPC;
-import server.maps.MapItem;
-import server.maps.MapObject;
-import server.maps.MapObjectType;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.client.inventory.BodyPart;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.InventoryType;
+import org.gms.client.inventory.Item;
+import org.gms.constants.inventory.ItemConstants;
+import org.gms.server.ItemInformationProvider;
+import org.gms.server.life.Monster;
+import org.gms.server.life.NPC;
+import org.gms.server.life.PlayerNPC;
+import org.gms.server.maps.MapItem;
+import org.gms.server.maps.MapObject;
+import org.gms.server.maps.MapObjectType;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands;
 
 import java.awt.*;

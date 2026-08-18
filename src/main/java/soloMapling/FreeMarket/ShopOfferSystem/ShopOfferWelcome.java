@@ -1,7 +1,7 @@
 package soloMapling.FreeMarket.ShopOfferSystem;
 
-import client.Character;
-import server.maps.PlayerShop;
+import org.gms.client.Character;
+import org.gms.server.maps.PlayerShop;
 import soloMapling.ArtificialPlayer.BotDialogueHandler;
 import soloMapling.server.MethodScheduler;
 

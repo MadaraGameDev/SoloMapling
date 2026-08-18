@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotMovementSystem;
 
-import client.Character;
-import client.Job;
+import org.gms.client.Character;
+import org.gms.client.Job;
 
 import java.awt.*;
 

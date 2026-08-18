@@ -1,6 +1,6 @@
 package soloMapling.FreeMarket;
 
-import client.inventory.Equip;
+import org.gms.client.inventory.Equip;
 
 public class FMEquip {
     private Equip equip;

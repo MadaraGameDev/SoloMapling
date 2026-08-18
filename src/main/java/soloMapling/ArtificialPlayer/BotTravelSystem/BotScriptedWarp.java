@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotTravelSystem;
 
-import server.maps.MapleMap;
-import server.maps.Portal;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Portal;
 
 import java.awt.Point;
 import java.util.ArrayList;

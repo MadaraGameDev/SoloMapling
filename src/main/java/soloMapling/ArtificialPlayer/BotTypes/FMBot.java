@@ -1,10 +1,10 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import client.inventory.Item;
-import server.maps.HiredMerchant;
-import server.maps.PlayerShop;
-import server.maps.PlayerShopItem;
+import org.gms.client.Character;
+import org.gms.client.inventory.Item;
+import org.gms.server.maps.HiredMerchant;
+import org.gms.server.maps.PlayerShop;
+import org.gms.server.maps.PlayerShopItem;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;

@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer;
 
-import client.Character;
+import org.gms.client.Character;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;
 

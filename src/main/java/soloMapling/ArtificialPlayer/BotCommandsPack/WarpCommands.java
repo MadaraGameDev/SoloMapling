@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer.BotCommandsPack;
 
-import client.Character;
-import server.maps.MapObject;
-import server.maps.MapleMap;
-import server.maps.Portal;
+import org.gms.client.Character;
+import org.gms.server.maps.MapObject;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Portal;
 import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.MovementRecording;
 

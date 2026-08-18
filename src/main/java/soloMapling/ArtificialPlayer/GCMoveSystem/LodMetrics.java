@@ -1,8 +1,8 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
-import net.server.Server;
-import net.server.world.World;
+import org.gms.client.Character;
+import org.gms.net.server.Server;
+import org.gms.net.server.world.World;
 import soloMapling.ArtificialPlayer.BotHelpers;
 
 import java.util.ArrayList;

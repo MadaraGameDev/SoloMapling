@@ -1,7 +1,7 @@
 package soloMapling.Environment;
 
-import client.Character;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 import soloMapling.ArtificialPlayer.BotGeneration;
 import soloMapling.ArtificialPlayer.BotHelpers;

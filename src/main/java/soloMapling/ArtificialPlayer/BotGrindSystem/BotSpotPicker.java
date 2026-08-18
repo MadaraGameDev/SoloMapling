@@ -1,6 +1,6 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import server.maps.MapleMap;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 
 import java.awt.Point;

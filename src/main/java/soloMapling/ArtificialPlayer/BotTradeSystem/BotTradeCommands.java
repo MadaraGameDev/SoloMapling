@@ -1,10 +1,10 @@
 package soloMapling.ArtificialPlayer.BotTradeSystem;
 
-import client.Character;
-import client.inventory.Equip;
-import client.inventory.Item;
-import server.Trade;
-import tools.PacketCreator;
+import org.gms.client.Character;
+import org.gms.client.inventory.Equip;
+import org.gms.client.inventory.Item;
+import org.gms.server.Trade;
+import org.gms.util.PacketCreator;
 
 import java.util.ArrayList;
 import java.util.Arrays;

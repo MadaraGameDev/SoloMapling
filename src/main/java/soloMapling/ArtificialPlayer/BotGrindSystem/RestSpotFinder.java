@@ -1,10 +1,10 @@
 package soloMapling.ArtificialPlayer.BotGrindSystem;
 
-import client.Character;
-import server.life.Monster;
-import server.maps.MapleMap;
-import server.maps.Portal;
-import server.maps.Rope;
+import org.gms.client.Character;
+import org.gms.server.life.Monster;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Portal;
+import org.gms.server.maps.Rope;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 
 import java.awt.Point;

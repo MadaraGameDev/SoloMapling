@@ -1,12 +1,12 @@
 package soloMapling.itemPool;
 
-import constants.inventory.EquipType;
-import provider.Data;
-import provider.DataProviderFactory;
-import provider.DataTool;
-import provider.wz.WZFiles;
-import provider.wz.XMLDomMapleData;
-import server.ItemInformationProvider;
+import org.gms.constants.inventory.EquipType;
+import org.gms.provider.Data;
+import org.gms.provider.DataProviderFactory;
+import org.gms.provider.DataTool;
+import org.gms.provider.wz.WZFiles;
+import org.gms.provider.wz.XMLDomMapleData;
+import org.gms.server.ItemInformationProvider;
 
 import java.io.FileInputStream;
 import java.nio.file.DirectoryStream;

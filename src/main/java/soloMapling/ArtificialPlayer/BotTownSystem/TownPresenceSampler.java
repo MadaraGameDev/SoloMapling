@@ -1,9 +1,9 @@
 package soloMapling.ArtificialPlayer.BotTownSystem;
 
-import server.maps.MapObject;
-import server.maps.MapObjectType;
-import server.maps.MapleMap;
-import server.maps.Portal;
+import org.gms.server.maps.MapObject;
+import org.gms.server.maps.MapObjectType;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Portal;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 
 import java.awt.Point;

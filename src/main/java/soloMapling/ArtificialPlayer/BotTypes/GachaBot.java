@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotTypes;
 
-import client.Character;
-import server.maps.ReactorDropEntry;
+import org.gms.client.Character;
+import org.gms.server.maps.ReactorDropEntry;
 import soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands;
 import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;

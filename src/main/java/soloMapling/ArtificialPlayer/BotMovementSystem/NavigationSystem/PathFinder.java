@@ -1,7 +1,7 @@
 package soloMapling.ArtificialPlayer.BotMovementSystem.NavigationSystem;
 
-import client.Character;
-import server.maps.MapleMap;
+import org.gms.client.Character;
+import org.gms.server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.MovementRecording;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.MovementRecordingRaw;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementStructures.StartEndPair;
@@ -259,10 +259,10 @@ public class PathFinder {
 
         // This callback runs inside the packet loop every N packets
         MidMovementCheck awarenessCheck = (bot) -> {
-            List<client.Character> nearbyPlayers = BotLogic.getRealPlayersInRange(
+            List<org.gms.client.Character> nearbyPlayers = BotLogic.getRealPlayersInRange(
                     bot, detectWidth, detectHeight);
 
-            for (client.Character player : nearbyPlayers) {
+            for (org.gms.client.Character player : nearbyPlayers) {
                 if (reactedPlayerIds.contains(player.getId())) {
                     continue;
                 }

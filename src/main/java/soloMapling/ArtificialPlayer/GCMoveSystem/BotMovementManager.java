@@ -1,14 +1,14 @@
 package soloMapling.ArtificialPlayer.GCMoveSystem;
 
-import client.Character;
+import org.gms.client.Character;
 import io.netty.buffer.Unpooled;
-import net.packet.ByteBufInPacket;
-import net.packet.InPacket;
-import net.packet.Packet;
-import server.maps.Foothold;
-import server.maps.MapleMap;
-import server.maps.Rope;
-import tools.PacketCreator;
+import org.gms.net.packet.ByteBufInPacket;
+import org.gms.net.packet.InPacket;
+import org.gms.net.packet.Packet;
+import org.gms.server.maps.Foothold;
+import org.gms.server.maps.MapleMap;
+import org.gms.server.maps.Rope;
+import org.gms.util.PacketCreator;
 
 import java.awt.*;
 import java.util.HashMap;
