@@ -801,6 +801,13 @@ public class MapleMap {
         dropFromMonster(chr, mob, true, (short) 0);
     }
 
+    // Spawns a quest-gated monster drop like dropFromMonster does: only characters that
+    // still need the item are sent it, and only they can pick it up.
+    public void spawnQuestMonsterDrop(final Monster mob, final Character owner, final Item item, Point pos, byte droptype,
+                                      short questid, short delay) {
+        spawnDrop(item, calcDropPos(pos, mob.getPosition()), mob, owner, droptype, questid, delay);
+    }
+
     public void dropFromReactor(final Character chr, final Reactor reactor, Item drop, Point dropPos, short questid,
                                 short delay) {
         spawnDrop(drop, this.calcDropPos(dropPos, reactor.getPosition()), reactor, chr,
@@ -1088,6 +1095,15 @@ public class MapleMap {
                 }
             }
         }, null);
+
+        if (questid <= 0) { // quest drops are only shown to characters who need them, so they skip the broadcast
+            mdrop.lockItem();
+            try {
+                broadcastItemDropMessage(mdrop, dropper.getPosition(), dropPos, (byte) 0, delay);
+            } finally {
+                mdrop.unlockItem();
+            }
+        }
 
         instantiateItemDrop(mdrop);
         activateItemReactors(mdrop, chr.getClient());

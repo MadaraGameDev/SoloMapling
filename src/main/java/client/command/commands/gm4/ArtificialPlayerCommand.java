@@ -37,6 +37,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQConstants;
+
 import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botLoot;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botLootLocation;
 import static soloMapling.ArtificialPlayer.BotCommandsPack.DropCommands.botLootOwnerItems;
@@ -64,6 +66,7 @@ import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.FM_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.GACHA_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.HENESYS_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.OPQ_BOT;
+import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.KPQ_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.SELLING_MERCHANT_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.BUYING_MERCHANT_BOT;
 import static soloMapling.ArtificialPlayer.BotTypeManager.BotType.NX_MERCHANT_BOT;
@@ -275,6 +278,17 @@ public class ArtificialPlayerCommand extends Command {
                 break;
             case "opqbot":
                 OPQ_BOT.createAndSetBot(fakechar);
+                break;
+            case "kpqbot":
+                if (fakechar.getLevel() < KPQConstants.MIN_LEVEL || fakechar.getLevel() > KPQConstants.MAX_LEVEL) {
+                    player.yellowMessage("KPQ bots must be level " + KPQConstants.MIN_LEVEL + "-" + KPQConstants.MAX_LEVEL + "; " + fakechar.getName()
+                            + " is level " + fakechar.getLevel() + ".");
+                    break;
+                }
+                KPQ_BOT.createAndSetBot(fakechar);
+                player.yellowMessage(fakechar.getName()
+                        + " is now a KPQ bot. Set three level " + KPQConstants.MIN_LEVEL + "-" + KPQConstants.MAX_LEVEL
+                        + " bots in Kerning City, then invite them to a party.");
                 break;
             case "jqbot":
             case "henesysjqbot":
@@ -919,6 +933,7 @@ public class ArtificialPlayerCommand extends Command {
         player.yellowMessage("!bot blackjackbot <cid>          - set as blackjack dealer");
         player.yellowMessage("!bot dgbot <cid>                 - set as drop game bot");
         player.yellowMessage("!bot opqbot <cid>                - set as OPQ bot");
+        player.yellowMessage("!bot kpqbot <cid>                - set as level " + KPQConstants.MIN_LEVEL + "-" + KPQConstants.MAX_LEVEL + " KPQ bot");
         player.yellowMessage("!bot jqbot <cid>                 - set as JQ bot");
         player.yellowMessage("-- Bot Conversion --");
         player.yellowMessage("!bot convertfmbot <cid>          - convert to FM bot");

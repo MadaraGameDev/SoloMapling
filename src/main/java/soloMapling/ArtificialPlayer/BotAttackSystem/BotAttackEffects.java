@@ -16,12 +16,14 @@ import server.maps.MapItem;
 import server.maps.MapObject;
 import server.maps.MapObjectType;
 import server.maps.MapleMap;
+import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 import soloMapling.server.MethodScheduler;
 import tools.PacketCreator;
 import tools.Randomizer;
 
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -174,6 +176,7 @@ public final class BotAttackEffects {
         final int dropRate = Math.max(1, mob.isBoss() ? world.getBossDropRate() : world.getDropRate());
         final int mesoRate = Math.max(1, world.getMesoRate());
         final ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        final List<Character> humans = partyHumans(bot);
         final int mobX = mob.getPosition().x;
         final int mobY = mob.getPosition().y;
 
@@ -183,6 +186,13 @@ public final class BotAttackEffects {
         for (MonsterDropEntry de : drops) {
             int dropChance = (int) Math.min((long) de.chance * dropRate, Integer.MAX_VALUE);
             if (Randomizer.nextInt(999999) >= dropChance) {
+                continue;
+            }
+
+            // Quest drops are only for human party members that still need the item. A bot
+            // never has quests of its own, so a bot outside a party drops none of them.
+            boolean questGated = de.itemId != 0 && (de.questid > 0 || ii.isQuestItem(de.itemId));
+            if (questGated && !anyPartyHumanNeeds(humans, de)) {
                 continue;
             }
 
@@ -204,10 +214,38 @@ public final class BotAttackEffects {
                     short qty = (short) (de.Maximum != 1 ? rollAmount(de.Minimum, de.Maximum) : 1);
                     item = new Item(de.itemId, (short) 0, qty);
                 }
-                map.spawnItemDrop(mob, bot, item, pos, dropType, /* playerDrop */ false);
+                if (questGated) {
+                    map.spawnQuestMonsterDrop(mob, bot, item, pos, dropType, de.questid, delay);
+                } else {
+                    map.spawnItemDrop(mob, bot, item, pos, dropType, /* playerDrop */ false);
+                }
                 index++;
             }
         }
+    }
+
+    /* Human members of the bot's party on its map; empty when the bot is not in a party. */
+    private static List<Character> partyHumans(Character bot) {
+        List<Character> humans = new ArrayList<>();
+        if (bot.getParty() == null) {
+            return humans;
+        }
+        for (Character member : bot.getPartyMembersOnSameMap()) {
+            if (!BotHelpers.isBot(member)) {
+                humans.add(member);
+            }
+        }
+        return humans;
+    }
+
+    /* True when any of the humans still needs this quest drop (the union of their open quests). */
+    private static boolean anyPartyHumanNeeds(List<Character> humans, MonsterDropEntry de) {
+        for (Character human : humans) {
+            if (human.needQuestItem(de.questid, de.itemId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /* Inclusive-ish amount roll matching vanilla (min..max), guarded against nextInt(0). */

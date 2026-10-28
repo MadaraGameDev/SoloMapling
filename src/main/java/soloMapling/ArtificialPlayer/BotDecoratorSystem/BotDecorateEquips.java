@@ -22,6 +22,11 @@ public class BotDecorateEquips {
      * or multiple threads will mutate the same Character's inventory concurrently.
      */
     public static void decorateBotEquips(Character fakechar) {
+        decorateBotEquips(fakechar, null);
+    }
+
+    // forcedWeapon (nullable) pins a first-job bowman/thief to a specific weapon type instead of the coin flip.
+    public static void decorateBotEquips(Character fakechar, EquipType forcedWeapon) {
         // Level 1-9 bots all share the classless BEGINNER job; the class-aware
         // pass below would dress them in random junk, so hand them curated
         // starter gear instead and stop.
@@ -30,7 +35,7 @@ public class BotDecorateEquips {
             return;
         }
         equipTopBottom(fakechar);
-        equipWeapon(fakechar);
+        equipWeapon(fakechar, forcedWeapon);
         equipCapGloveShoes(fakechar);
         decorateBotAccessories(fakechar);
     }
@@ -197,6 +202,10 @@ public class BotDecorateEquips {
      * @param character The character to equip
      */
     public static void equipWeapon(Character character) {
+        equipWeapon(character, null);
+    }
+
+    public static void equipWeapon(Character character, EquipType forcedWeapon) {
         Random random = new Random();
         Job jobType = character.getJobStyle();
         int jobId = character.getJob().getId(); // Specific job ID
@@ -292,7 +301,8 @@ public class BotDecorateEquips {
                 // determineBowmanPath below picks BOW vs CROSSBOW from the job id.
                 if (jobLevel == 1) {
                     // Beginner bowman can use either bow or crossbow
-                    possibleWeapons.add(random.nextBoolean() ? EquipType.BOW : EquipType.CROSSBOW);
+                    possibleWeapons.add(forcedWeapon == EquipType.BOW || forcedWeapon == EquipType.CROSSBOW
+                            ? forcedWeapon : random.nextBoolean() ? EquipType.BOW : EquipType.CROSSBOW);
                 } else {
                     // Determine bowman path based on job ID
                     Job bowmanPath = determineBowmanPath(character);
@@ -311,7 +321,9 @@ public class BotDecorateEquips {
             case THIEF:
                 if (jobLevel == 1) {
                     // Beginner thief can use either claw or dagger
-                    if (random.nextBoolean()) {
+                    boolean claw = forcedWeapon == EquipType.CLAW
+                            || (forcedWeapon != EquipType.DAGGER && random.nextBoolean());
+                    if (claw) {
                         possibleWeapons.add(EquipType.CLAW);
                     } else {
                         possibleWeapons.add(EquipType.DAGGER);

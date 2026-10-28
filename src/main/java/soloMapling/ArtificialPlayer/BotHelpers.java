@@ -7,6 +7,7 @@ import net.server.channel.Channel;
 import server.ItemInformationProvider;
 import server.maps.MapItem;
 import server.maps.MapObject;
+import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 
 import java.awt.*;
 import java.util.List;
@@ -32,6 +33,10 @@ public class BotHelpers {
 
     public static boolean isBot(Character chr) {
         return isBot(chr.getId());
+    }
+
+    public static boolean isPartyQuestBot(Character chr) {
+        return chr != null && CharacterStorage.getBotById(chr.getId()) instanceof PartyQuestBot;
     }
 
     private static boolean isBot(int id) {

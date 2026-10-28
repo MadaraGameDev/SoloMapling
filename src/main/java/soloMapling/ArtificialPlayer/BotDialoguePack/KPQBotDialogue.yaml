@@ -1,0 +1,34 @@
+# KPQ bot dialogue. Edit these lines for different bot personalities or localization.
+KPQBot:
+  Recruit:
+    text:
+      - "%s LFG KPQ"
+      - "%s J> KPQ"
+      - "any KPQ party need a %s?"
+      - "%s looking for KPQ"
+      - "KPQ anyone? %s here"
+  Assignment:
+    text:
+      - "%d"
+      - "%d coupons"
+      - "i need %d"
+      - "%d, ez"
+  PassDrop:
+    text:
+      - "pass by exit %s"
+      - "%s, pass here"
+      - "dropped pass at exit %s"
+  PuzzleHint:
+    text:
+      - "%s try another %s"
+      - "%s, switch %ss?"
+      - "%s, diff %s maybe?"
+  StageClear:
+    text:
+      - "yay"
+      - "XD"
+      - "leggo"
+      - "finally..."
+      - "nice"
+      - "ez"
+      - "we got it"

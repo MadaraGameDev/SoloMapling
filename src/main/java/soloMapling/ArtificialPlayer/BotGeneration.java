@@ -3,6 +3,7 @@ package soloMapling.ArtificialPlayer;
 import client.Character;
 import client.Client;
 import client.Job;
+import constants.inventory.EquipType;
 import server.maps.MapleMap;
 import soloMapling.ArtificialPlayer.BotAttackSystem.BotBuffDriver;
 import soloMapling.ArtificialPlayer.BotBuffRequestSystem.BotBuffRequestHandler;
@@ -81,6 +82,12 @@ public class BotGeneration {
 
     // forcedJobId > 0 pins the exact job (GM 'trainhere' test spawn); 0 = a random job for the class.
     public static int createBot(Point pos, MapleMap map, int baseClass, int minLevel, int maxLevel, int forcedJobId) {
+        return createBot(pos, map, baseClass, minLevel, maxLevel, forcedJobId, null);
+    }
+
+    // forcedWeapon (nullable) pins a first-job bowman/thief to bow/crossbow or claw/dagger.
+    public static int createBot(Point pos, MapleMap map, int baseClass, int minLevel, int maxLevel, int forcedJobId,
+                                EquipType forcedWeapon) {
         int cid = 2; // CID 2 = Base Bot Character
 
         Character bot = null;
@@ -99,7 +106,7 @@ public class BotGeneration {
         if (baseClass <= 0) {
             setBotVariables(bot);
         } else {
-            setBotVariables(bot, baseClass, minLevel, maxLevel, forcedJobId);
+            setBotVariables(bot, baseClass, minLevel, maxLevel, forcedJobId, forcedWeapon);
         }
         // Choreography sleeps ~2.5-6s in total; play it on a virtual thread so
         // mass spawning isn't gated on each bot's arrival animation. Drop-down ->
@@ -174,7 +181,11 @@ public class BotGeneration {
     private static Character setBotStats(Character baseChr, int botId) {
         Character onDemandBot = baseChr; // Character.getDefault(c)
         onDemandBot.setClient(getBotClient());
-        onDemandBot.setName(getRandomCharacterIGN());
+        String name;
+        do {
+            name = getRandomCharacterIGN();
+        } while (world.getPlayerStorage().getCharacterByName(name) != null);
+        onDemandBot.setName(name);
         onDemandBot.setID(botId);
         onDemandBot.setFame(botId); // debug purposes
         return onDemandBot;

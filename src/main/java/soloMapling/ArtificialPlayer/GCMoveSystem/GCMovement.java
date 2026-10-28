@@ -186,6 +186,23 @@ public final class GCMovement {
         BotMovementManager.broadcastMovement(st);
     }
 
+    /* Place a bot at an exact puzzle position. Narrow KPQ barrel targets can sit
+     * above the nearest ground point, so ground-snapping can miss their check area. */
+    public static void teleportToExact(Character bot, int x, int y) {
+        if (bot == null) {
+            return;
+        }
+        enable(bot);
+        BotMovementState st = STATES.get(bot.getId());
+        if (st == null) {
+            return;
+        }
+        clearMoveIntent(bot);
+        BotPhysicsEngine.teleportTo(st, bot, new Point(x, y));
+        BotMovementManager.resetEntryStateAfterTeleport(st);
+        BotMovementManager.broadcastMovement(st);
+    }
+
     /* Flag the bot as combat-alerted so it renders the 5s ALERT pose. The observing client already starts
      * its own alert timer when it renders our attack packet; this keeps the bot's OWN movement broadcasts
      * carrying ALERT instead of STAND for the duration, so a following idle/move packet doesn't cancel the

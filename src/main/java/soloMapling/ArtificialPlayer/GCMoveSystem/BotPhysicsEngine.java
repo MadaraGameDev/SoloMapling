@@ -227,6 +227,11 @@ final class BotPhysicsEngine {
         }
     }
 
+    // An airborne move resolved the way the client does: a wall clamps x only and the tick's vertical
+    // step carries on. `collision` is what the (possibly vertical-only) move hit; `end` is where the move
+    // ends when it hits nothing; `wallHit` says x was clamped.
+    private record AirStep(AirCollision collision, Point end, boolean wallHit) {}
+
     private record RopeGrabResult(Point point, int ticks) {}
 
     enum AirborneStepResult {
@@ -1487,10 +1492,12 @@ final class BotPhysicsEngine {
 
         Point previousPos = roundedAirPosition(entry);
         Point nextPos = advanceAirbornePosition(entry, bot);
-        AirCollision collision = resolveAirCollision(bot.getMap(), previousPos, nextPos);
-        if (collision.type() == AirCollisionType.WALL) {
-            collideWithAirWall(entry, bot, collision.point());
-            return AirborneStepResult.WALL;
+        AirStep step = resolveAirStep(bot.getMap(), previousPos, nextPos);
+        AirCollision collision = step.collision();
+        boolean wallHit = step.wallHit();
+        if (wallHit) {
+            clampToAirWall(entry, step.end());
+            nextPos = step.end();
         }
         if (collision.type() == AirCollisionType.CEILING) {
             collideWithAirCeiling(entry, bot, collision.point());
@@ -1502,22 +1509,14 @@ final class BotPhysicsEngine {
             return AirborneStepResult.LANDED;
         }
         applyAirbornePosition(entry, bot, nextPos);
-        return AirborneStepResult.CONTINUE;
+        return wallHit ? AirborneStepResult.WALL : AirborneStepResult.CONTINUE;
     }
 
-    private static void collideWithAirWall(BotMovementState entry, Character bot, Point collisionPoint) {
+    private static void clampToAirWall(BotMovementState entry, Point clamped) {
         entry.airVelX = 0;
         entry.airSteerVelX = 0.0;
         entry.fixedAirArc = false;
-        entry.physX = collisionPoint.x;
-        entry.physY = collisionPoint.y;
-        bot.setPosition(collisionPoint);
-        entry.inAir = true;
-        entry.climbing = false;
-        entry.climbRope = null;
-        entry.crouching = false;
-        setMovementVelocity(entry, 0, velocityFromAirStep(entry.velY));
-        syncCharacterState(entry);
+        entry.physX = clamped.x;
     }
 
     private static void collideWithAirCeiling(BotMovementState entry, Character bot, Point collisionPoint) {
@@ -1784,6 +1783,25 @@ final class BotPhysicsEngine {
         return estimateRopeGrabTimeMs(map, from, -ropeJumpForcePerTick(profile), stepX, targetRope, 0L);
     }
 
+    /*
+     * Client wall rule (Footholdtree::limit_movement -> limitx): hitting a wall sets x to the wall and zeroes
+     * horizontal speed, and the vertical step is unaffected - so a body pushing into a wall keeps falling.
+     * The raw collision resolver picks the earliest hit along one diagonal segment, which for a wall would
+     * replace the whole position with the wall point and discard the rest of the tick's vertical step; a bot
+     * already against the wall and still steering into it (progress 0) then never moved vertically. Resolve a
+     * wall hit as x-clamped, then check ceilings and floors along the remaining vertical segment.
+     * Shared by the live integrator and the arc simulations so they cannot disagree.
+     */
+    private static AirStep resolveAirStep(MapleMap map, Point previousPos, Point nextPos) {
+        AirCollision first = resolveAirCollision(map, previousPos, nextPos);
+        if (first.type() != AirCollisionType.WALL) {
+            return new AirStep(first, nextPos, false);
+        }
+        Point wallPoint = first.point();
+        Point clamped = new Point(wallPoint.x, nextPos.y);
+        return new AirStep(resolveAirCollision(map, wallPoint, clamped), clamped, true);
+    }
+
     private static AirCollision resolveAirCollision(MapleMap map, Point previousPos, Point nextPos) {
         if (map == null || map.getFootholds() == null || previousPos == null || nextPos == null) {
             return AirCollision.none();
@@ -1795,10 +1813,14 @@ final class BotPhysicsEngine {
         if (wall.type() != AirCollisionType.NONE) {
             best = wall;
         }
-        if (ceiling.type() != AirCollisionType.NONE && ceiling.progress() < best.progress()) {
+        // A ceiling or landing that coincides with a wall (same progress) wins: a body reaching a wall
+        // column and a floor in the same step lands on the floor's last pixel. Letting the wall win
+        // clamps x first, leaves the vertical re-check starting below the floor, and drops the body
+        // through it.
+        if (ceiling.type() != AirCollisionType.NONE && ceiling.progress() <= best.progress()) {
             best = ceiling;
         }
-        if (landing.type() != AirCollisionType.NONE && landing.progress() < best.progress()) {
+        if (landing.type() != AirCollisionType.NONE && landing.progress() <= best.progress()) {
             best = landing;
         }
         return best;
@@ -2770,14 +2792,12 @@ final class BotPhysicsEngine {
 
             int x = (int) Math.round(physX);
             int intY = (int) Math.round(physY);
-            AirCollision collision = resolveAirCollision(map, new Point((int) Math.round(physX - stepX), previousIntY),
+            AirStep step = resolveAirStep(map, new Point((int) Math.round(physX - stepX), previousIntY),
                     new Point(x, intY));
-            if (collision.type() == AirCollisionType.WALL) {
-                physX = collision.point().x;
-                physY = collision.point().y;
+            AirCollision collision = step.collision();
+            if (step.wallHit()) {
+                physX = step.end().x;
                 stepX = 0;
-                previousIntY = collision.point().y;
-                continue;
             }
             if (collision.type() == AirCollisionType.CEILING) {
                 physX = collision.point().x;
@@ -2853,13 +2873,12 @@ final class BotPhysicsEngine {
             int intY = (int) Math.round(physY);
             Point previousPoint = new Point((int) Math.round(physX - stepX), previousIntY);
             Point nextPoint = new Point(x, intY);
-            AirCollision collision = resolveAirCollision(map, previousPoint, nextPoint);
-            if (collision.type() == AirCollisionType.WALL) {
-                physX = collision.point().x;
-                physY = collision.point().y;
+            AirStep step = resolveAirStep(map, previousPoint, nextPoint);
+            AirCollision collision = step.collision();
+            if (step.wallHit()) {
+                physX = step.end().x;
                 stepX = 0;
-                previousIntY = collision.point().y;
-                continue;
+                nextPoint = step.end();
             }
             if (collision.type() == AirCollisionType.CEILING) {
                 physX = collision.point().x;

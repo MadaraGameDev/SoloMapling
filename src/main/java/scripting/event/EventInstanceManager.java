@@ -45,6 +45,7 @@ import server.maps.MapManager;
 import server.maps.MapleMap;
 import server.maps.Portal;
 import server.maps.Reactor;
+import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 import tools.PacketCreator;
 import tools.Pair;
 
@@ -103,6 +104,7 @@ public class EventInstanceManager {
 
     // registers player status on an event (null on this Map structure equals to 0)
     private final Map<Integer, Integer> playerGrid = new HashMap<>();
+    private final Set<Integer> gridClaims = new HashSet<>();
 
     // registers all opened gates on the event. Will help late characters to encounter next stages gates already opened
     private final Map<Integer, Pair<String, Integer>> openedGates = new HashMap<>();
@@ -237,7 +239,11 @@ public class EventInstanceManager {
     }
 
     public synchronized void registerPlayer(final Character chr, boolean runEntryScript) {
-        if (chr == null || !chr.isLoggedinWorld() || disposed) {
+        // Headless bots never set Character.loggedIn or enter the normal player login path.
+        // Only accept the Character currently registered as an active bot.
+        var bot = chr == null ? null : CharacterStorage.getBotById(chr.getId());
+        boolean activeBot = bot != null && bot.getChr() == chr;
+        if (chr == null || !(chr.isLoggedinWorld() || activeBot) || disposed) {
             return;
         }
 
@@ -458,8 +464,12 @@ public class EventInstanceManager {
     public void changedMap(final Character chr, final int mapId) {
         try {
             invokeScriptFunction("changedMap", EventInstanceManager.this, chr, mapId);
-        } catch (ScriptException | NoSuchMethodException ex) {
-        } // optional
+        } catch (ScriptException ex) {
+            log.error("Event script {} changedMap failed for character {} moving to map {}",
+                    em.getName(), chr.getId(), mapId, ex);
+        } catch (NoSuchMethodException ignored) {
+            // Optional event callback.
+        }
     }
 
     public void afterChangedMap(final Character chr, final int mapId) {
@@ -1348,6 +1358,42 @@ public class EventInstanceManager {
         }
     }
 
+    // Registers a player on a random status in 1..weights.length, chosen by weight among the statuses no
+    // one has claimed yet, and returns it. A claim outlasts the player's later status changes and is only
+    // released by gridClear. Once every status is claimed, repeats are allowed.
+    public final int gridClaimUnique(Character chr, int[] weights) {
+        writeLock.lock();
+        try {
+            int total = 0;
+            for (int i = 0; i < weights.length; i++) {
+                if (!gridClaims.contains(i + 1)) {
+                    total += weights[i];
+                }
+            }
+            boolean repeat = total <= 0;
+            if (repeat) {
+                for (int weight : weights) {
+                    total += weight;
+                }
+            }
+
+            int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(total);
+            for (int i = 0; i < weights.length; i++) {
+                if (repeat || !gridClaims.contains(i + 1)) {
+                    roll -= weights[i];
+                    if (roll < 0) {
+                        gridClaims.add(i + 1);
+                        playerGrid.put(chr.getId(), i + 1);
+                        return i + 1;
+                    }
+                }
+            }
+            throw new IllegalStateException("No grid status selected");
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
     // unregisters a player status in an event
     public final void gridRemove(Character chr) {
         writeLock.lock();
@@ -1382,6 +1428,7 @@ public class EventInstanceManager {
         writeLock.lock();
         try {
             playerGrid.clear();
+            gridClaims.clear();
         } finally {
             writeLock.unlock();
         }

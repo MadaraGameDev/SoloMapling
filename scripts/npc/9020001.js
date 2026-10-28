@@ -64,6 +64,11 @@ function clearStage(stage, eim, curMap) {
     eim.showClearEffect(true);
 
     eim.linkToNextStage(stage, "kpq", curMap);  //opens the portal to the next map
+    try {
+        Java.type('soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQBot').announceStageClear(eim, curMap);
+    } catch (ignored) {
+        // Chat must never prevent stage completion.
+    }
 }
 
 function rectangleStages(eim, property, areaCombos, areaRects) {
@@ -98,6 +103,43 @@ function rectangleStages(eim, property, areaCombos, areaRects) {
     }
 
     return accept;
+}
+
+function recordWrongPuzzleCheck(eim, stage, areaCombos, areaRects) {
+    // Must match KPQConstants.STAGE_PROPERTY_PREFIX: the KPQ bots read these properties.
+    var prefix = "kpqbot_stg" + stage;
+    var placement = [];
+    for (var i = 0; i < areaRects.length; i++) placement.push(0);
+    var players = eim.getPlayers();
+    for (var i = 0; i < players.size(); i++) {
+        for (var j = 0; j < areaRects.length; j++) {
+            if (areaRects[j].contains(players.get(i).getPosition())) {
+                placement[j]++;
+                break;
+            }
+        }
+    }
+    var checkedMask = -1;
+    for (var i = 0; i < areaCombos.length; i++) {
+        var matches = true;
+        for (var j = 0; j < placement.length; j++) {
+            if (areaCombos[i][j] != placement[j]) {
+                matches = false;
+                break;
+            }
+        }
+        if (matches) {
+            checkedMask = 0;
+            for (var j = 0; j < placement.length; j++) {
+                if (placement[j] == 1) checkedMask |= 1 << j;
+            }
+            break;
+        }
+    }
+    eim.setProperty(prefix + "CheckedMask", checkedMask.toString());
+    var key = prefix + "WrongChecks";
+    var previous = eim.getProperty(key);
+    eim.setProperty(key, (previous == null ? 1 : parseInt(previous) + 1).toString());
 }
 
 var status = -1;
@@ -151,8 +193,10 @@ function action(mode, type, selection) {
                     if (data == 0) {
                         cm.sendNext("Thanks for bringing me the coupons. Please hand the pass to your party leader to continue.");
                     } else if (data == -1) {
-                        data = Math.floor(Math.random() * stage1Questions.length) + 1;   //data will be counted from 1
-                        eim.gridInsert(cm.getPlayer(), data);
+                        // each question can be held by only one player until the stage clears
+                        var weights = [];
+                        for (var i = 0; i < stage1Questions.length; i++) weights.push(1);
+                        data = eim.gridClaimUnique(cm.getPlayer(), Java.to(weights, "int[]"));   //data will be counted from 1
 
                         var question = stage1Questions[data - 1];
                         cm.sendNext(question);
@@ -193,6 +237,7 @@ function action(mode, type, selection) {
                         clearStage(stage, eim, curMap);
                         cm.sendNext("Please hurry on to the next stage, the portal opened!");
                     } else {
+                        recordWrongPuzzleCheck(eim, stage, stgCombos, stgAreas);
                         eim.showWrongEffect();
                         cm.sendNext("It looks like you haven't found the 3 " + nthobj + " just yet. Please think of a different combination of " + nthobj + ". Only 3 are allowed to " + nthverb + " on " + nthobj + ", and if you " + nthpos + " it may not count as an answer, so please keep that in mind. Keep going!");
                     }
@@ -220,6 +265,7 @@ function action(mode, type, selection) {
                         clearStage(stage, eim, curMap);
                         cm.sendNext("Please hurry on to the next stage, the portal opened!");
                     } else {
+                        recordWrongPuzzleCheck(eim, stage, stgCombos, stgAreas);
                         eim.showWrongEffect();
                         cm.sendNext("It looks like you haven't found the 3 " + nthobj + " just yet. Please think of a different combination of " + nthobj + ". Only 3 are allowed to " + nthverb + " on " + nthobj + ", and if you " + nthpos + " it may not count as an answer, so please keep that in mind. Keep going!");
                     }
@@ -247,6 +293,7 @@ function action(mode, type, selection) {
                         clearStage(stage, eim, curMap);
                         cm.sendNext("Please hurry on to the next stage, the portal opened!");
                     } else {
+                        recordWrongPuzzleCheck(eim, stage, stgCombos, stgAreas);
                         eim.showWrongEffect();
                         cm.sendNext("It looks like you haven't found the 3 " + nthobj + " just yet. Please think of a different combination of " + nthobj + ". Only 3 are allowed to " + nthverb + " on " + nthobj + ", and if you " + nthpos + " it may not count as an answer, so please keep that in mind. Keep going!");
                     }

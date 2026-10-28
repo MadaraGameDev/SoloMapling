@@ -20,6 +20,7 @@ import soloMapling.ArtificialPlayer.BotTypeManager;
 import soloMapling.ArtificialPlayer.ConversationManager;
 import soloMapling.ArtificialPlayer.SocialHotPotatoManager;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
+import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQBot;
 import soloMapling.ArtificialPlayer.BotTypes.TrainingBot;
 import soloMapling.ArtificialPlayer.GCMoveSystem.LodCounts;
 import soloMapling.Casino.CasinoChipConfig;
@@ -28,6 +29,7 @@ import soloMapling.server.ExecutorServiceManager;
 import soloMapling.server.NpcSpawner;
 
 import java.awt.Point;
+import java.util.Comparator;
 
 import static soloMapling.ArtificialPlayer.BotCommandsPack.SocialCommands.BotSpeak;
 import static soloMapling.DebugUtilities.debugprint;
@@ -52,6 +54,7 @@ import static soloMapling.Environment.PlatformPlacement.spawnFillerBotsLockedY;
 import static soloMapling.Environment.EnvironmentManager.spawnFillerBotsPotionShop;
 import static soloMapling.Environment.EnvironmentManager.convertRandomFillersToScrollBots;
 import static soloMapling.Environment.EnvironmentManager.spawnOPQBotsInLobby;
+import static soloMapling.Environment.EnvironmentManager.spawnKPQBotsInKerning;
 import static soloMapling.Environment.EnvironmentManager.spawnGameZoneHostBots;
 import static soloMapling.Environment.EnvironmentManager.spawnAttackTestBots;
 import static soloMapling.Environment.EnvironmentManager.spawnBlackjackTables;
@@ -352,6 +355,24 @@ public class EnvironmentCommand extends Command {
                 spawnOPQBotsInLobby();
                 player.yellowMessage("OPQ lobby bots done.");
                 break;
+            case "spawnkpqbots":
+                player.yellowMessage("Ensuring a six-bot KPQ cohort in Kerning City...");
+                spawnKPQBotsInKerning();
+                player.yellowMessage("KPQ cohort setup done.");
+                break;
+            case "kpqbots":
+                var kpqBots = CharacterStorage.getAllBots().values().stream()
+                        .filter(KPQBot.class::isInstance)
+                        .map(KPQBot.class::cast)
+                        .sorted(Comparator.comparing(bot -> bot.getChr().getName()))
+                        .toList();
+                player.yellowMessage("Dedicated KPQ bots (" + kpqBots.size() + "):");
+                for (KPQBot bot : kpqBots) {
+                    Character chr = bot.getChr();
+                    player.yellowMessage(chr.getName() + " - level " + chr.getLevel()
+                            + ", map " + chr.getMapId());
+                }
+                break;
             case "spawngzhbots":
                 player.yellowMessage("Spawning Game Zone Host Bots...");
                 spawnGameZoneHostBots();
@@ -547,6 +568,8 @@ public class EnvironmentCommand extends Command {
         player.yellowMessage("!env convertscrollbots           - convert random fillers to scroll bots");
         player.yellowMessage("-- Special Spawns --");
         player.yellowMessage("!env spawnopqbots                - spawn OPQ lobby bots");
+        player.yellowMessage("!env spawnkpqbots                - ensure six KPQ bots in Kerning City");
+        player.yellowMessage("!env kpqbots                     - list dedicated KPQ bot names and levels");
         player.yellowMessage("!env spawngzhbots                - spawn Game Zone Host bots");
         player.yellowMessage("!env spawnbjtables               - spawn Blackjack tables");
         player.yellowMessage("!env attacktest                  - spawn per-class attack test bots on Henesys Hunting Ground 1");

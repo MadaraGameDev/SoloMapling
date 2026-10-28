@@ -13,9 +13,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 public class FMShopDescGen {
 
@@ -307,13 +310,21 @@ public class FMShopDescGen {
     private static List<String> namePool;
     private static int namePoolIndex = 0;
     private static final List<String> assignedCharacterNames = new ArrayList<>();
+    private static final Set<String> assignedCharacterNameKeys = new HashSet<>();
 
     /**
      * Draws a unique name from the pool and registers it as a bot character name.
      * Use this when spawning bot characters.
      */
     public static synchronized String getRandomCharacterIGN() {
-        String name = getRandomIGN();
+        String baseName = getRandomIGN();
+        String name = baseName;
+        int suffix = 2;
+        while (!assignedCharacterNameKeys.add(name.toLowerCase(Locale.ROOT))) {
+            String suffixText = Integer.toString(suffix++);
+            name = baseName.substring(0, Math.min(baseName.length(), Math.max(0, 12 - suffixText.length())))
+                    + suffixText;
+        }
         assignedCharacterNames.add(name);
         return name;
     }

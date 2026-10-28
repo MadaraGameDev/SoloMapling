@@ -58,6 +58,16 @@ public final class BotAttackDriver {
     // Bosses are large and multi-bodied - Zakum's arms sit well above the bot's foothold - so
     // their part positions are tested against a vertically padded copy of the reach box.
     private static final int BOSS_Y_PAD = 300;
+    // Per-bot replacement for BOSS_Y_PAD, for encounters whose boss is a single body on one platform.
+    private static final Map<Integer, Integer> bossYPadByBot = new ConcurrentHashMap<>();
+
+    public static void setBossYPad(int botId, int pad) {
+        bossYPadByBot.put(botId, pad);
+    }
+
+    public static void clearBossYPad(int botId) {
+        bossYPadByBot.remove(botId);
+    }
     // Two horizontal extents count as "centred on the bot" (a surround attack) when they match
     // within this slack (px).
     private static final int SYMMETRY_SLACK = 24;
@@ -322,8 +332,9 @@ public final class BotAttackDriver {
             }
             // Bosses are big and multi-bodied: test their part positions against a vertically
             // padded box so e.g. Zakum's elevated arms still register as in-reach.
+            int bossYPad = bossYPadByBot.getOrDefault(bot.getId(), BOSS_Y_PAD);
             Rectangle test = m.isBoss()
-                    ? new Rectangle(box.x, box.y - BOSS_Y_PAD, box.width, box.height + 2 * BOSS_Y_PAD)
+                    ? new Rectangle(box.x, box.y - bossYPad, box.width, box.height + 2 * bossYPad)
                     : box;
             // The reach box is a flat rectangle with no terrain sense, so a tall box would let the bot
             // hit a mob standing on a separate platform overhead/below. Drop mobs on a different ledge

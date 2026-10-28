@@ -155,8 +155,7 @@ function playerLeft(eim, player) {
 function changedMap(eim, player, mapid) {
     if (mapid < minMapId || mapid > maxMapId) {
         if (eim.isEventTeamLackingNow(true, minPlayers, player)) {
-            eim.unregisterPlayer(player);
-            end(eim);
+            unregisterAndEnd(eim, player, false);
         } else {
             eim.unregisterPlayer(player);
         }
@@ -174,20 +173,16 @@ function playerDead(eim, player) {}
 
 function playerRevive(eim, player) { // player presses ok on the death pop up.
     if (eim.isEventTeamLackingNow(true, minPlayers, player)) {
-        eim.unregisterPlayer(player);
-        end(eim);
+        unregisterAndEnd(eim, player, false);
     } else {
         eim.unregisterPlayer(player);
     }
 }
 
 function playerDisconnected(eim, player) {
-    if (eim.isEventTeamLackingNow(true, minPlayers, player)) {
-        eim.unregisterPlayer(player);
-        end(eim);
-    } else {
-        eim.unregisterPlayer(player);
-    }
+    // A disconnected human may never return. Release the lobby now and put its
+    // headless party members back at the recruiting entrance.
+    unregisterAndEnd(eim, player, true);
 }
 
 function leftParty(eim, player) {
@@ -208,12 +203,45 @@ function monsterValue(eim, mobId) {
     return 1;
 }
 
-function end(eim) {
-    var party = eim.getPlayers();
-    for (var i = 0; i < party.size(); i++) {
-        playerExit(eim, party.get(i));
+function logExitFailure(member, action, error) {
+    Java.type('java.lang.System').err.println('[KerningPQ] Failed to ' + action
+            + ' character ' + member.getId() + ' (' + member.getName() + '): ' + error);
+}
+
+function unregisterAndEnd(eim, player, botsToRecruitMap) {
+    try {
+        eim.unregisterPlayer(player);
+    } catch (error) {
+        logExitFailure(player, 'unregister', error);
+    } finally {
+        end(eim, botsToRecruitMap);
     }
-    eim.dispose();
+}
+
+function end(eim, botsToRecruitMap) {
+    try {
+        var botStorage = Java.type('soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage');
+        var party = eim.getPlayers();
+        for (var i = 0; i < party.size(); i++) {
+            var member = party.get(i);
+            var destination = exitMap;
+            try {
+                if (botsToRecruitMap && botStorage.botLoggedIn(member.getId())) {
+                    destination = recruitMap;
+                }
+                eim.unregisterPlayer(member);
+            } catch (error) {
+                logExitFailure(member, 'unregister', error);
+            }
+            try {
+                member.changeMap(destination, 0);
+            } catch (error) {
+                logExitFailure(member, 'warp to ' + destination, error);
+            }
+        }
+    } finally {
+        eim.dispose();
+    }
 }
 
 function giveRandomEventReward(eim, player) {
@@ -223,6 +251,18 @@ function giveRandomEventReward(eim, player) {
 function clearPQ(eim) {
     eim.stopEventTimer();
     eim.setEventCleared();
+    // Quest 1201 has no hand-in NPC: finish it for humans when the final
+    // ten-pass gate clears, the authoritative completion point for this PQ.
+    var quest = Java.type('server.quest.Quest').getInstance(1201);
+    var botStorage = Java.type('soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage');
+    var party = eim.getPlayers();
+    for (var i = 0; i < party.size(); i++) {
+        var member = party.get(i);
+        if (!botStorage.botLoggedIn(member.getId())
+                && member.getQuest(quest).getStatus().getId() == 1) {
+            quest.forceComplete(member, 9020000);
+        }
+    }
 }
 
 function monsterKilled(mob, eim) {}

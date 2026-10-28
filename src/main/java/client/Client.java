@@ -65,6 +65,8 @@ import server.life.Monster;
 import server.maps.FieldLimit;
 import server.maps.MapleMap;
 import server.maps.MiniDungeonInfo;
+import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
+import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQBot;
 import tools.BCrypt;
 import tools.DatabaseConnection;
 import tools.HexTool;
@@ -908,8 +910,13 @@ public class Client extends ChannelInboundHandlerAdapter {
             wserv.updateParty(party.getId(), PartyOperation.LOG_ONOFF, chrp);
             if (party.getLeader().getId() == idz && map != null) {
                 PartyCharacter lchr = null;
+                // A headless bot cannot lead a PQ after its human leader logs out.
+                // Keep that leader offline if no real player is present to replace them.
                 for (PartyCharacter pchr : party.getMembers()) {
-                    if (pchr != null && pchr.getId() != idz && (lchr == null || lchr.getLevel() <= pchr.getLevel()) && map.getCharacterById(pchr.getId()) != null) {
+                    if (pchr != null && pchr.getId() != idz
+                            && !CharacterStorage.botLoggedIn(pchr.getId())
+                            && (lchr == null || lchr.getLevel() <= pchr.getLevel())
+                            && map.getCharacterById(pchr.getId()) != null) {
                         lchr = pchr;
                     }
                 }
@@ -937,6 +944,7 @@ public class Client extends ChannelInboundHandlerAdapter {
                 if (eim != null) {
                     eim.playerDisconnected(player);
                 }
+                KPQBot.returnPartyBotsToKerningOnHumanLogout(player);
 
                 if (player.getMonsterCarnival() != null) {
                     player.getMonsterCarnival().playerDisconnected(getPlayer().getId());

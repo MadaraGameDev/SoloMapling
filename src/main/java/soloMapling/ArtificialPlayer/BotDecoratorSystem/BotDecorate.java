@@ -3,6 +3,7 @@ package soloMapling.ArtificialPlayer.BotDecoratorSystem;
 import client.Character;
 import client.Job;
 import client.inventory.InventoryType;
+import constants.inventory.EquipType;
 import soloMapling.ArtificialPlayer.BotTier;
 import soloMapling.itemPool.EquipMetadataCache;
 
@@ -346,6 +347,12 @@ public class BotDecorate {
     // appropriate for the class + level. Everything else (level, gender, body, class-coherent gear, NX) is
     // identical, so a forced-job bot is decorated ONCE, correctly — no post-hoc re-decoration needed.
     public static void setBotVariables(Character bot, int baseClass, int minLevel, int maxLevel, int forcedJobId) {
+        setBotVariables(bot, baseClass, minLevel, maxLevel, forcedJobId, null);
+    }
+
+    // forcedWeapon (nullable) pins the weapon type of a first-job bowman/thief (bow vs crossbow, claw vs dagger).
+    public static void setBotVariables(Character bot, int baseClass, int minLevel, int maxLevel, int forcedJobId,
+                                       EquipType forcedWeapon) {
         BotTier tier = getRandomTier();
         bot.setTier(tier);
         // generateBotLevel requires min < max; an exact-level spawn pins both ends.
@@ -366,7 +373,7 @@ public class BotDecorate {
         }
 
         if (EquipMetadataCache.isInitialized()) {
-            BotDecorateEquips.decorateBotEquips(bot);
+            BotDecorateEquips.decorateBotEquips(bot, forcedWeapon);
         } else {
             // Cache not ready (env still booting): dress generically now and defer
             // the full class-aware pass - same fallback the random path uses.

@@ -13,6 +13,7 @@ import soloMapling.ArtificialPlayer.BotMessagingSystem.MessageQueue;
 import soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands;
 import soloMapling.ArtificialPlayer.BotPartySystem.BotPartyLogic;
 import soloMapling.ArtificialPlayer.BotSM;
+import soloMapling.ArtificialPlayer.PartyQuestBot;
 import soloMapling.ArtificialPlayer.BotTypes.OPQ.OPQSharedContext.OPQPhase;
 import soloMapling.Environment.EnvironmentManager;
 import soloMapling.Environment.PlatformPlacement;
@@ -50,7 +51,7 @@ import static soloMapling.DebugUtilities.debugprint;
  * - All waits are time-boxed against {@link OPQConstants#STAGE_WAIT_TIMEOUT_MS}
  * so a stuck bot eventually falls back to LOOP_CHECK instead of hanging.
  */
-public class OPQBot extends BotSM {
+public class OPQBot extends BotSM implements PartyQuestBot {
 
     // volatile: the swing chains run off-tick and read/write these
     private volatile OPQBotState opqBotState = OPQBotState.RESET;

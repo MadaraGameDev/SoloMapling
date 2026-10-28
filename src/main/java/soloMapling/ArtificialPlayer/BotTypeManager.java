@@ -14,6 +14,8 @@ import soloMapling.ArtificialPlayer.BotTypes.HenesysBot;
 import soloMapling.ArtificialPlayer.BotTypes.HenesysJQBot;
 import soloMapling.ArtificialPlayer.BotTypes.NXMerchantBot;
 import soloMapling.ArtificialPlayer.BotTypes.OPQ.OPQBot;
+import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQBot;
+import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQConstants;
 import soloMapling.ArtificialPlayer.BotTypes.ScrollingBot;
 import soloMapling.ArtificialPlayer.BotTypes.SellingMerchantBot;
 import soloMapling.ArtificialPlayer.BotTypes.BuyingMerchantBot;
@@ -140,6 +142,18 @@ public class BotTypeManager {
             public void createAndSetBot(Character character) {
                 OPQBot opqBot = new OPQBot(character);
                 CharacterStorage.addActiveBot(character.getId(), opqBot);
+            }
+        },
+        KPQ_BOT {
+            @Override
+            public void createAndSetBot(Character character) {
+                if (character.getLevel() < KPQConstants.MIN_LEVEL || character.getLevel() > KPQConstants.MAX_LEVEL) {
+                    debugprint("KPQ_BOT: refused out-of-range character " + character.getName()
+                            + " (level " + character.getLevel() + ")");
+                    return;
+                }
+                KPQBot kpqBot = new KPQBot(character);
+                CharacterStorage.addActiveBot(character.getId(), kpqBot);
             }
         },
         SOCIAL_BOT {

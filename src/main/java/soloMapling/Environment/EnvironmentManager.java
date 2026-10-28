@@ -63,6 +63,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import constants.inventory.EquipType;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
+import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQBot;
+import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQConstants;
 
 public class EnvironmentManager {
 
@@ -155,6 +163,7 @@ public class EnvironmentManager {
 
         runWave(7, "Late arrivals", List.of(
                 () -> spawnOPQBotsInLobby(),
+                () -> spawnKPQBotsInKerning(),
                 () -> spawnMerchBotsBatch("m1", 2, 2, 0),
                 () -> spawnMerchBotsBatch("m2", 2, 2, 1),
                 () -> spawnMerchBotsBatch("m5", 2, 2, 1)
@@ -881,6 +890,74 @@ public class EnvironmentManager {
             setAndStartBots(allBotIds, BotTypeManager.BotType.OPQ_BOT);
             debugprint(fmt("OPQ lobby bots spawned and started: {}", allBotIds.size()));
         }
+    }
+
+    // One bot per class slot: base class (1 Warrior, 2 Magician, 3 Bowman, 4 Thief), the weapon that pins
+    // bow/crossbow and claw/dagger at first job, and the home it waits at: first and third pipe tops, then
+    // four spots on the lower walkway. Homes are destinations; bots arrive through Kerning's spawn portal.
+    private enum KpqSlot {
+        WARRIOR(1, null, new Point(-965, 373)),
+        MAGE(2, null, new Point(-735, 373)),
+        BOW(3, EquipType.BOW, new Point(-1045, 479)),
+        CROSSBOW(3, EquipType.CROSSBOW, new Point(-900, 486)),
+        CLAW_THIEF(4, EquipType.CLAW, new Point(-800, 486)),
+        DAGGER_THIEF(4, EquipType.DAGGER, new Point(-680, 486));
+
+        final int baseClass;
+        final EquipType weapon;
+        final Point home;
+
+        KpqSlot(int baseClass, EquipType weapon, Point home) {
+            this.baseClass = baseClass;
+            this.weapon = weapon;
+            this.home = home;
+        }
+    }
+
+    private static final Map<Integer, KpqSlot> KPQ_BOT_SLOTS = new ConcurrentHashMap<>();
+
+    /** Keep one KPQ bot of each class (warrior, mage, bow, crossbow, claw thief, dagger thief) in Kerning City. */
+    public static int spawnKPQBotsInKerning() {
+        // A slot is filled while its bot is still an active KPQ bot inside the quest's level range.
+        Set<KpqSlot> filled = EnumSet.noneOf(KpqSlot.class);
+        KPQ_BOT_SLOTS.entrySet().removeIf(e -> !(getBotById(e.getKey()) instanceof KPQBot bot)
+                || bot.getChr().getLevel() < KPQConstants.SPAWN_MIN_LEVEL || bot.getChr().getLevel() > KPQConstants.SPAWN_MAX_LEVEL);
+        filled.addAll(KPQ_BOT_SLOTS.values());
+        List<KpqSlot> missing = new ArrayList<>();
+        for (KpqSlot slot : KpqSlot.values()) {
+            if (!filled.contains(slot)) missing.add(slot);
+        }
+        if (missing.isEmpty()) {
+            debugprint(fmt("KPQ bots already available: {}", filled.size()));
+            return 0;
+        }
+
+        MapleMap map = getMapleMapById(MapId.KERNING_CITY);
+        if (map == null || map.getPortal(0) == null) return 0;
+        Point spawnAt = map.getPortal(0).getPosition();
+        List<Integer> ids = new ArrayList<>();
+        List<KpqSlot> assignments = new ArrayList<>();
+        for (KpqSlot slot : missing) {
+            try {
+                int botId = BotGeneration.createBot(spawnAt, map, slot.baseClass, KPQConstants.SPAWN_MIN_LEVEL, KPQConstants.SPAWN_MAX_LEVEL, 0, slot.weapon);
+                if (botId > 0) {
+                    ids.add(botId);
+                    assignments.add(slot);
+                }
+            } catch (Exception e) {
+                debugprint(fmt("KPQ bot create failed on {} ({})", map.getId(), e.getMessage()));
+            }
+        }
+        setAndStartBots(ids, BotTypeManager.BotType.KPQ_BOT);
+        for (int i = 0; i < ids.size(); i++) {
+            if (getBotById(ids.get(i)) instanceof KPQBot bot) {
+                bot.setAssignedSpace(assignments.get(i).home);
+                KPQ_BOT_SLOTS.put(ids.get(i), assignments.get(i));
+            }
+        }
+        int spawned = ids.size();
+        debugprint(fmt("KPQ bots spawned in Kerning City: {} (missing {})", spawned, missing.size()));
+        return spawned;
     }
 
     public static void setBotsLevelRange(List<Integer> botIds, int minLevel, int maxLevel) {
