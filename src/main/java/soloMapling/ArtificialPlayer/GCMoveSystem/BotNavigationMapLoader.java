@@ -142,7 +142,7 @@ final class BotNavigationMapLoader {
             int y1 = DataTool.getInt(rope.getChildByPath("y1"));
             int y2 = DataTool.getInt(rope.getChildByPath("y2"));
             boolean ladder = DataTool.getInt(rope.getChildByPath("l"), 0) == 1;
-            map.addRope(new Rope(x, y1, y2, ladder));
+            map.addRope(new Rope(Rope.idOf(rope.getName()), x, y1, y2, ladder));
         }
     }
 
