@@ -757,7 +757,12 @@ public class Monster extends AbstractLoadedLife {
             boolean isBot = BotHelpers.isBot(attacker);
             attacker.gainExp(_personalExp, _partyExp, !isBot, false, white);
             if (!isBot) {
-                attacker.increaseEquipExp(_personalExp);
+                try {
+                    attacker.increaseEquipExp(_personalExp);
+                } catch (RuntimeException e) {
+                    // equip exp is a bonus on top of the kill: if it fails, the kill still counts for quests and still drops
+                    log.warn("Equip exp gain failed for chr {} on mob {}", attacker.getId(), getId(), e);
+                }
             }
             attacker.raiseQuestMobCount(getId());
         }

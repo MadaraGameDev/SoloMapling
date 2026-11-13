@@ -40,9 +40,17 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class XMLDomMapleData implements Data {
     private final Node node;
+    // One lock for everything read out of the same file. The DOM underneath is not safe to read from several
+    // threads at once (it fills nodes in on first touch and keeps a shared cache for child lists), and every
+    // lookup hands out a new Data over that same DOM, so a lock held per Data never kept two readers apart.
+    // A file read by many threads at once (item names by thousands of bots) ended up with nodes that had lost
+    // their attributes, for good. A ReentrantLock rather than synchronized: readers on virtual threads then
+    // wait without holding on to a carrier thread.
+    private final ReentrantLock lock;
     private Path imageDataDir;
 
     public XMLDomMapleData(FileInputStream fis, Path imageDataDir) {
@@ -51,6 +59,7 @@ public class XMLDomMapleData implements Data {
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
             Document document = documentBuilder.parse(fis);
             this.node = document.getFirstChild();
+            this.lock = new ReentrantLock();
         } catch (ParserConfigurationException e) {
             throw new RuntimeException(e);
         } catch (SAXException e) {
@@ -61,101 +70,123 @@ public class XMLDomMapleData implements Data {
         this.imageDataDir = imageDataDir;
     }
 
-    private XMLDomMapleData(Node node) {
+    private XMLDomMapleData(Node node, ReentrantLock lock) {
         this.node = node;
+        this.lock = lock;
     }
 
     @Override
-    public synchronized Data getChildByPath(String path) {  // the whole XML reading system seems susceptible to give nulls on strenuous read scenarios
-        String[] segments = path.split("/");
-        if (segments[0].equals("..")) {
-            return ((Data) getParent()).getChildByPath(path.substring(path.indexOf("/") + 1));
-        }
+    public Data getChildByPath(String path) {
+        lock.lock();
+        try {
+            String[] segments = path.split("/");
+            if (segments[0].equals("..")) {
+                return ((Data) getParent()).getChildByPath(path.substring(path.indexOf("/") + 1));
+            }
 
-        Node myNode;
-        myNode = node;
-        for (String s : segments) {
-            NodeList childNodes = myNode.getChildNodes();
-            boolean foundChild = false;
+            Node myNode;
+            myNode = node;
+            for (String s : segments) {
+                NodeList childNodes = myNode.getChildNodes();
+                boolean foundChild = false;
+                for (int i = 0; i < childNodes.getLength(); i++) {
+                    Node childNode = childNodes.item(i);
+                    if (childNode.getNodeType() == Node.ELEMENT_NODE
+                            && childNode.getAttributes().getNamedItem("name").getNodeValue().equals(s)) {
+                        myNode = childNode;
+                        foundChild = true;
+                        break;
+                    }
+                }
+                if (!foundChild) {
+                    return null;
+                }
+            }
+
+            XMLDomMapleData ret = new XMLDomMapleData(myNode, lock);
+            ret.imageDataDir = imageDataDir.resolve(getName().trim()).resolve(path).getParent();
+            return ret;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public List<Data> getChildren() {
+        lock.lock();
+        try {
+            List<Data> ret = new ArrayList<>();
+
+            NodeList childNodes = node.getChildNodes();
             for (int i = 0; i < childNodes.getLength(); i++) {
                 Node childNode = childNodes.item(i);
-                if (childNode.getNodeType() == Node.ELEMENT_NODE
-                        && childNode.getAttributes().getNamedItem("name").getNodeValue().equals(s)) {
-                    myNode = childNode;
-                    foundChild = true;
-                    break;
+                if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+                    XMLDomMapleData child = new XMLDomMapleData(childNode, lock);
+                    child.imageDataDir = imageDataDir.resolve(getName().trim());
+                    ret.add(child);
                 }
             }
-            if (!foundChild) {
-                return null;
-            }
-        }
 
-        XMLDomMapleData ret = new XMLDomMapleData(myNode);
-        ret.imageDataDir = imageDataDir.resolve(getName().trim()).resolve(path).getParent();
-        return ret;
+            return ret;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
-    public synchronized List<Data> getChildren() {
-        List<Data> ret = new ArrayList<>();
+    public Object getData() {
+        lock.lock();
+        try {
+            NamedNodeMap attributes = node.getAttributes();
+            DataType type = getType();
+            switch (type) {
+                case DOUBLE:
+                case FLOAT:
+                case INT:
+                case SHORT: {
+                    String value = attributes.getNamedItem("value").getNodeValue();
+                    Number nval = GameConstants.parseNumber(value);
 
-        NodeList childNodes = node.getChildNodes();
-        for (int i = 0; i < childNodes.getLength(); i++) {
-            Node childNode = childNodes.item(i);
-            if (childNode.getNodeType() == Node.ELEMENT_NODE) {
-                XMLDomMapleData child = new XMLDomMapleData(childNode);
-                child.imageDataDir = imageDataDir.resolve(getName().trim());
-                ret.add(child);
-            }
-        }
-
-        return ret;
-    }
-
-    @Override
-    public synchronized Object getData() {
-        NamedNodeMap attributes = node.getAttributes();
-        DataType type = getType();
-        switch (type) {
-            case DOUBLE:
-            case FLOAT:
-            case INT:
-            case SHORT: {
-                String value = attributes.getNamedItem("value").getNodeValue();
-                Number nval = GameConstants.parseNumber(value);
-
-                switch (type) {
-                    case DOUBLE:
-                        return nval.doubleValue();
-                    case FLOAT:
-                        return nval.floatValue();
-                    case INT:
-                        return nval.intValue();
-                    case SHORT:
-                        return nval.shortValue();
-                    default:
-                        return null;
+                    switch (type) {
+                        case DOUBLE:
+                            return nval.doubleValue();
+                        case FLOAT:
+                            return nval.floatValue();
+                        case INT:
+                            return nval.intValue();
+                        case SHORT:
+                            return nval.shortValue();
+                        default:
+                            return null;
+                    }
                 }
+                case STRING:
+                case UOL: {
+                    String value = attributes.getNamedItem("value").getNodeValue();
+                    return value;
+                }
+                case VECTOR: {
+                    String x = attributes.getNamedItem("x").getNodeValue();
+                    String y = attributes.getNamedItem("y").getNodeValue();
+                    return new Point(Integer.parseInt(x), Integer.parseInt(y));
+                }
+                default:
+                    return null;
             }
-            case STRING:
-            case UOL: {
-                String value = attributes.getNamedItem("value").getNodeValue();
-                return value;
-            }
-            case VECTOR: {
-                String x = attributes.getNamedItem("x").getNodeValue();
-                String y = attributes.getNamedItem("y").getNodeValue();
-                return new Point(Integer.parseInt(x), Integer.parseInt(y));
-            }
-            default:
-                return null;
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
-    public synchronized DataType getType() {
-        String nodeName = node.getNodeName();
+    public DataType getType() {
+        String nodeName;
+        lock.lock();
+        try {
+            nodeName = node.getNodeName();
+        } finally {
+            lock.unlock();
+        }
 
         switch (nodeName) {
             case "imgdir":
@@ -187,24 +218,34 @@ public class XMLDomMapleData implements Data {
     }
 
     @Override
-    public synchronized DataEntity getParent() {
-        Node parentNode;
-        parentNode = node.getParentNode();
-        if (parentNode.getNodeType() == Node.DOCUMENT_NODE) {
-            return null;
+    public DataEntity getParent() {
+        lock.lock();
+        try {
+            Node parentNode;
+            parentNode = node.getParentNode();
+            if (parentNode.getNodeType() == Node.DOCUMENT_NODE) {
+                return null;
+            }
+            XMLDomMapleData parentData = new XMLDomMapleData(parentNode, lock);
+            parentData.imageDataDir = imageDataDir.getParent();
+            return parentData;
+        } finally {
+            lock.unlock();
         }
-        XMLDomMapleData parentData = new XMLDomMapleData(parentNode);
-        parentData.imageDataDir = imageDataDir.getParent();
-        return parentData;
     }
 
     @Override
-    public synchronized String getName() {
-        return node.getAttributes().getNamedItem("name").getNodeValue();
+    public String getName() {
+        lock.lock();
+        try {
+            return node.getAttributes().getNamedItem("name").getNodeValue();
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
-    public synchronized Iterator<Data> iterator() {
+    public Iterator<Data> iterator() {
         return getChildren().iterator();
     }
 }
