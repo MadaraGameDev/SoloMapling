@@ -902,12 +902,25 @@ class BotMovementManager {
     // client uses it to pick the render z-layer. Without it, bots draw on the top layer
     // (in front of tiles/walls). While airborne, clients keep sending the last-known
     // ground fh, so cache it on the bot entry.
+    // On a rope or ladder a real client reports minus the rope's ladderRope number instead, and the
+    // client draws the climber in the rope's layer. The foothold under a climbing bot is a platform:
+    // near the top of a ladder it is the one at the top, whose layer is behind the ladder's.
     private static int resolveBroadcastFhId(BotMovementState entry, Character bot) {
+        int ropeFhId = climbingFhId(entry.climbing, entry.climbRope);
+        if (ropeFhId != 0) {
+            return ropeFhId;
+        }
         Foothold fh = BotPhysicsEngine.findGroundFoothold(bot.getMap(), bot.getPosition());
         if (fh != null) {
             entry.lastGroundFhId = fh.getId();
         }
         return entry.lastGroundFhId;
+    }
+
+    // The move packet's foothold field for a bot on a rope or ladder: minus the rope's number. 0 when
+    // the bot is not climbing or the rope's number is unknown; the caller then reports the ground.
+    static int climbingFhId(boolean climbing, Rope climbRope) {
+        return climbing && climbRope != null && climbRope.id() > 0 ? -climbRope.id() : 0;
     }
 
     private static void sendMovementPacket(Character bot, BotPhysicsEngine.MovementSnapshot snapshot, int fhId) {

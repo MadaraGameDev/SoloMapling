@@ -242,7 +242,7 @@ public class MapFactory {
                 int ry1 = DataTool.getInt(rope.getChildByPath("y1"));
                 int ry2 = DataTool.getInt(rope.getChildByPath("y2"));
                 boolean ladder = DataTool.getInt(rope.getChildByPath("l"), 0) == 1;
-                map.addRope(new Rope(rx, ry1, ry2, ladder));
+                map.addRope(new Rope(Rope.idOf(rope.getName()), rx, ry1, ry2, ladder));
             }
         }
         if (mapData.getChildByPath("area") != null) {
